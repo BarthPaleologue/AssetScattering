@@ -32,6 +32,21 @@ const light = new PointLight("light", new Vector3(-5, 5, 10), scene);
 const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
 
 const grassBlade = makeGrassBlade(scene, 5);
+grassBlade.isVisible = false;
+
+const grassBlades = [];
+const patchSize = 10;
+const patchResolution = 20;
+const patchPosition = new Vector3(0, 0, 0);
+
+for(let x = 0; x < patchResolution; x++) {
+    for(let z = 0; z < patchResolution; z++) {
+        const blade = grassBlade.createInstance(`blade${x}${z}`);
+        blade.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2;
+        blade.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2;
+        grassBlades.push(blade);
+    }
+}
 
 //Effect.ShadersStore[`PostProcess1FragmentShader`] = postprocessCode;
 //const postProcess = new PostProcess("postProcess1", "PostProcess1", [], ["textureSampler"], 1, camera, Texture.BILINEAR_SAMPLINGMODE, engine);
