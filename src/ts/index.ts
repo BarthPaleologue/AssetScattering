@@ -19,6 +19,7 @@ import {InstancePatch} from "./instancePatch";
 
 import perlinNoise from "../assets/perlin.png";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
+import {InstanceScatterer} from "./instanceScatterer";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -53,15 +54,14 @@ const patchResolution = 50;
 const fieldPosition = new Vector3(0, 0, 0);
 const fieldRadius = 3;
 
-function computeLodLevel(distance: number, patchSize: number) {
-    return distance < patchSize * 2 ? 1 : 0;
-}
-
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const map = new Map<Vector3, InstancePatch>();
+const scatterer = new InstanceScatterer(bladeMeshFromLod, patchSize, (patch: InstancePatch) => {
+    const distance = Vector3.Distance(patch.patchPosition, camera.position);
+    return distance < patchSize * 2 ? 1 : 0;
+});
 
 for (let x = -fieldRadius; x <= fieldRadius; x++) {
     for (let z = -fieldRadius; z <= fieldRadius; z++) {
@@ -69,11 +69,9 @@ for (let x = -fieldRadius; x <= fieldRadius; x++) {
         if (radiusSquared > fieldRadius * fieldRadius) continue;
 
         const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
-        const lodLevel = computeLodLevel(Vector3.Distance(patchPosition, camera.position), patchSize);
+        const patch = new InstancePatch(bladeMeshFromLod, 0, patchPosition, patchSize, patchResolution);
 
-        const patch = new InstancePatch(bladeMeshFromLod, lodLevel, patchPosition, patchSize, patchResolution);
-
-        map.set(patchPosition, patch);
+        scatterer.map.set(patchPosition, patch);
     }
 }
 
@@ -81,13 +79,6 @@ for (let x = -fieldRadius; x <= fieldRadius; x++) {
 //const postProcess = new PostProcess("postProcess1", "PostProcess1", [], ["textureSampler"], 1, camera, Texture.BILINEAR_SAMPLINGMODE, engine);
 
 let clock = 0;
-
-function swap(oldInstance: InstancedMesh, newInstance: InstancedMesh) {
-    newInstance.position.copyFrom(oldInstance.position);
-    newInstance.rotation.copyFrom(oldInstance.rotation);
-    newInstance.scaling.copyFrom(oldInstance.scaling);
-    oldInstance.dispose();
-}
 
 function updateScene() {
     const deltaTime = engine.getDeltaTime() / 1000;
@@ -97,27 +88,7 @@ function updateScene() {
     material.setFloat("time", clock);
 
     // update grass LOD
-    for (const patchPosition of map.keys()) {
-        const distanceToCamera = Vector3.Distance(patchPosition, camera.position);
-        const patch = map.get(patchPosition);
-        if (!patch) {
-            throw new Error("Patch data not found");
-        }
-
-        const newLod = computeLodLevel(distanceToCamera, patchSize);
-        if (newLod === patch.lod) continue;
-
-        const newInstances = [];
-        for (const instance of patch.instances) {
-            const bladeType = bladeMeshFromLod[newLod];
-            const newInstance = bladeType.createInstance(instance.name);
-            swap(instance, newInstance);
-            newInstances.push(newInstance);
-        }
-
-        patch.instances = newInstances;
-        patch.lod = newLod;
-    }
+    scatterer.update(camera);
 }
 
 scene.executeWhenReady(() => {
