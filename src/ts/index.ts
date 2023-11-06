@@ -18,6 +18,7 @@ import {makeGrassMaterial} from "./grassMaterial";
 import {makeInstancePatch} from "./instancePatch";
 
 import perlinNoise from "../assets/perlin.png";
+import {Mesh} from "@babylonjs/core/Meshes/mesh";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -57,18 +58,27 @@ enum LOD_LEVEL {
     LOW
 }
 
+function computeLodLevel(distance: number, patchSize: number) {
+    return distance < patchSize * 2 ? LOD_LEVEL.HIGH : LOD_LEVEL.LOW;
+}
+
+const bladeMeshMap = new Map<LOD_LEVEL, Mesh>();
+bladeMeshMap.set(LOD_LEVEL.HIGH, highQualityGrassBlade);
+bladeMeshMap.set(LOD_LEVEL.LOW, lowQualityGrassBlade);
+
 const map = new Map<Vector3, [InstancedMesh[], LOD_LEVEL, number]>();
 
-for (let x = -fieldRadius; x < fieldRadius; x++) {
-    for (let z = -fieldRadius; z < fieldRadius; z++) {
+for (let x = -fieldRadius; x <= fieldRadius; x++) {
+    for (let z = -fieldRadius; z <= fieldRadius; z++) {
         const radiusSquared = x * x + z * z;
         if (radiusSquared > fieldRadius * fieldRadius) continue;
+
         const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
-        const isHighQuality = Vector3.Distance(patchPosition, camera.position) < patchSize * 2;
-        const grassBlade = isHighQuality ? highQualityGrassBlade : lowQualityGrassBlade;
+        const lodLevel = computeLodLevel(Vector3.Distance(patchPosition, camera.position), patchSize);
+        const grassBlade = bladeMeshMap.get(lodLevel) as Mesh;
         const instances = makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
 
-        map.set(patchPosition, [instances, isHighQuality ? LOD_LEVEL.HIGH : LOD_LEVEL.LOW, patchSize]);
+        map.set(patchPosition, [instances, lodLevel, patchSize]);
     }
 }
 
