@@ -15,7 +15,7 @@ import {makeGrassBlade} from "./grassBlade";
 import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import {ArcRotateCamera, DirectionalLight} from "@babylonjs/core";
 import {makeGrassMaterial} from "./grassMaterial";
-import {makeInstancePatch} from "./instancePatch";
+import {InstancePatch} from "./instancePatch";
 
 import perlinNoise from "../assets/perlin.png";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
@@ -61,7 +61,7 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const map = new Map<Vector3, [InstancedMesh[], number, number]>();
+const map = new Map<Vector3, InstancePatch>();
 
 for (let x = -fieldRadius; x <= fieldRadius; x++) {
     for (let z = -fieldRadius; z <= fieldRadius; z++) {
@@ -70,10 +70,10 @@ for (let x = -fieldRadius; x <= fieldRadius; x++) {
 
         const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
         const lodLevel = computeLodLevel(Vector3.Distance(patchPosition, camera.position), patchSize);
-        const grassBlade = bladeMeshFromLod[lodLevel];
-        const instances = makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
 
-        map.set(patchPosition, [instances, lodLevel, patchSize]);
+        const patch = new InstancePatch(bladeMeshFromLod, lodLevel, patchPosition, patchSize, patchResolution);
+
+        map.set(patchPosition, patch);
     }
 }
 
@@ -99,24 +99,24 @@ function updateScene() {
     // update grass LOD
     for (const patchPosition of map.keys()) {
         const distanceToCamera = Vector3.Distance(patchPosition, camera.position);
-        const patchData = map.get(patchPosition);
-        if (!patchData) {
+        const patch = map.get(patchPosition);
+        if (!patch) {
             throw new Error("Patch data not found");
         }
-        const [instances, currentLod, patchSize] = patchData;
 
         const newLod = computeLodLevel(distanceToCamera, patchSize);
-        if (newLod === currentLod) continue;
+        if (newLod === patch.lod) continue;
 
         const newInstances = [];
-        for (const instance of instances) {
+        for (const instance of patch.instances) {
             const bladeType = bladeMeshFromLod[newLod];
             const newInstance = bladeType.createInstance(instance.name);
             swap(instance, newInstance);
             newInstances.push(newInstance);
         }
 
-        map.set(patchPosition, [newInstances, newLod, patchSize]);
+        patch.instances = newInstances;
+        patch.lod = newLod;
     }
 }
 
