@@ -27,6 +27,7 @@ const engine = new Engine(canvas);
 const scene = new Scene(engine);
 
 const camera = new ArcRotateCamera("camera", 3.14/2, 1, 15, Vector3.Zero(), scene);
+camera.lowerRadiusLimit = 1;
 camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
@@ -69,6 +70,8 @@ let clock = 0;
 function updateScene() {
     const deltaTime = engine.getDeltaTime() / 1000;
     clock += deltaTime;
+
+    material.setVector3("cameraPosition", camera.position);
 }
 
 scene.executeWhenReady(() => {
