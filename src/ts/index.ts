@@ -46,7 +46,7 @@ grassBlade.material = material;
 
 const grassBlades = [];
 const patchSize = 10;
-const patchResolution = 20;
+const patchResolution = 50;
 const cellSize = patchSize / patchResolution;
 const patchPosition = new Vector3(0, 0, 0);
 

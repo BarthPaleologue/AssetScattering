@@ -22,10 +22,11 @@ void main() {
     float leanAmount = 0.3;
     float curveAmount = leanAmount * position.y;
     vec3 rotatedPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), curveAmount);
+    vec3 rotatedNormal = rotateAround(normal, vec3(1.0, 0.0, 0.0), curveAmount);
 
     vec4 outPosition = viewProjection * finalWorld * vec4(rotatedPosition, 1.0);
     gl_Position = outPosition;
 
     normalMatrix = transpose(inverse(finalWorld));
-    vNormal = normal;
+    vNormal = rotatedNormal;
 }
