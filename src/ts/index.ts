@@ -15,6 +15,7 @@ import {makeGrassBlade} from "./grassBlade";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import {ArcRotateCamera, DirectionalLight} from "@babylonjs/core";
 import {makeGrassMaterial} from "./grassMaterial";
+import {makeInstancePatch} from "./instancePatch";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -39,28 +40,29 @@ groundMaterial.diffuseColor.copyFromFloats(0.5, 0.5, 0.5);
 
 ground.material = groundMaterial;
 
-const grassBlade = makeGrassBlade(scene, 5);
-grassBlade.isVisible = false;
+const highQualityGrassBlade = makeGrassBlade(scene, 4);
+highQualityGrassBlade.isVisible = false;
+
+const lowQualityGrassBlade = makeGrassBlade(scene, 2);
+lowQualityGrassBlade.isVisible = false;
 
 const material = makeGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
-grassBlade.material = material;
+highQualityGrassBlade.material = material;
+lowQualityGrassBlade.material = material;
 
-const grassBlades = [];
 const patchSize = 10;
 const patchResolution = 50;
-const cellSize = patchSize / patchResolution;
-const patchPosition = new Vector3(0, 0, 0);
+const fieldPosition = new Vector3(0, 0, 0);
+const fieldRadius = 4;
 
-for(let x = 0; x < patchResolution; x++) {
-    for(let z = 0; z < patchResolution; z++) {
-        const blade = grassBlade.createInstance(`blade${x}${z}`);
-        const randomCellPositionX = Math.random() * cellSize;
-        const randomCellPositionZ = Math.random() * cellSize;
-        blade.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2 + randomCellPositionX;
-        blade.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2 + randomCellPositionZ;
-        blade.rotation.y = Math.random() * 2 * Math.PI;
-        grassBlades.push(blade);
+for(let x = -fieldRadius; x < fieldRadius; x++) {
+    for(let z = -fieldRadius; z < fieldRadius; z++) {
+        const radiusSquared = x * x + z * z;
+        if(radiusSquared > fieldRadius * fieldRadius) continue;
+        const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
+        const grassBlade = radiusSquared < 2 * 2 ? highQualityGrassBlade : lowQualityGrassBlade;
+        makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
     }
 }
 

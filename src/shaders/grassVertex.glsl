@@ -26,7 +26,13 @@ float easeOut(float t, float a) {
     return 1.0 - pow(1.0 - t, a);
 }
 
+float easeIn(float t, float alpha) {
+    return pow(t, alpha);
+}
+
 #pragma glslify: perlin3 = require(./perlin3.glsl)
+
+#pragma glslify: remap = require(./remap.glsl)
 
 #include<instancesDeclaration>
 
@@ -40,16 +46,21 @@ void main() {
 
     // wind
     vec3 objectWorld = (finalWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-    float windStrength = (perlin3(objectWorld * 0.35 + time) - 0.5) * 2.0;
+    float windStrength = perlin3(objectWorld * 0.35 + time);
+    float windDir = perlin3(objectWorld * 0.05 + 0.05 * time) * 2.0 * 3.14;
+
+    float windLeanAngle = remap(windStrength, 0.0, 1.0, 0.25, 1.0);
+    windLeanAngle = easeIn(windLeanAngle, 2.0) * 1.25;
 
     // curved grass blade
     float leanAmount = 0.3;
-    float curveAmount = leanAmount * position.y + windStrength * 0.1;
-    vec3 leaningPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), curveAmount);
+    float curveAmount = leanAmount * position.y + windLeanAngle;
+    vec3 leanAxis = rotateAround(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), windDir);
+    vec3 leaningPosition = rotateAround(position, leanAxis, curveAmount);
 
     //vec3 leaningNormal = rotateAround(normal, vec3(1.0, 0.0, 0.0), curveAmount);
-    vec3 leaningNormal1 = rotateAround(curvyNormal1, vec3(1.0, 0.0, 0.0), curveAmount);
-    vec3 leaningNormal2 = rotateAround(curvyNormal2, vec3(1.0, 0.0, 0.0), curveAmount);
+    vec3 leaningNormal1 = rotateAround(curvyNormal1, leanAxis, curveAmount);
+    vec3 leaningNormal2 = rotateAround(curvyNormal2, leanAxis, curveAmount);
 
     vec3 worldPosition = (finalWorld * vec4(leaningPosition, 1.0)).xyz;
 
