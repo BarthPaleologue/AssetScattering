@@ -8,6 +8,8 @@ uniform mat4 projection;
 
 uniform vec3 cameraPosition;
 
+uniform float time;
+
 out vec3 vPosition;
 
 out mat4 normalMatrix;
@@ -24,6 +26,8 @@ float easeOut(float t, float a) {
     return 1.0 - pow(1.0 - t, a);
 }
 
+#pragma glslify: perlin3 = require(./perlin3.glsl)
+
 #include<instancesDeclaration>
 
 void main() {
@@ -34,9 +38,13 @@ void main() {
     vec3 curvyNormal1 = rotateAround(normal, vec3(0.0, 1.0, 0.0), normalCurveAmount);
     vec3 curvyNormal2 = rotateAround(normal, vec3(0.0, 1.0, 0.0), -normalCurveAmount);
 
+    // wind
+    vec3 objectWorld = (finalWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    float windStrength = (perlin3(objectWorld * 0.35 + time) - 0.5) * 2.0;
+
     // curved grass blade
     float leanAmount = 0.3;
-    float curveAmount = leanAmount * position.y;
+    float curveAmount = leanAmount * position.y + windStrength * 0.1;
     vec3 leaningPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), curveAmount);
 
     //vec3 leaningNormal = rotateAround(normal, vec3(1.0, 0.0, 0.0), curveAmount);
@@ -44,6 +52,7 @@ void main() {
     vec3 leaningNormal2 = rotateAround(curvyNormal2, vec3(1.0, 0.0, 0.0), curveAmount);
 
     vec3 worldPosition = (finalWorld * vec4(leaningPosition, 1.0)).xyz;
+
 
     /*vec3 viewDir = normalize(cameraPosition - worldPosition);
     float viewDotNormal = abs(dot(viewDir, leaningNormal));

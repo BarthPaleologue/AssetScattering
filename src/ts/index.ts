@@ -35,6 +35,7 @@ const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace
 const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
 const groundMaterial = new StandardMaterial("groundMaterial", scene);
 groundMaterial.specularColor.scaleInPlace(0);
+groundMaterial.diffuseColor.copyFromFloats(0.5, 0.5, 0.5);
 
 ground.material = groundMaterial;
 
@@ -72,6 +73,7 @@ function updateScene() {
     clock += deltaTime;
 
     material.setVector3("cameraPosition", camera.position);
+    material.setFloat("time", clock);
 }
 
 scene.executeWhenReady(() => {
