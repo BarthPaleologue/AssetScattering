@@ -1,13 +1,12 @@
 import {Engine} from "@babylonjs/core/Engines/engine";
 import {Scene} from "@babylonjs/core/scene";
-import {FreeCamera} from "@babylonjs/core/Cameras/freeCamera";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
 /*import { Effect } from "@babylonjs/core/Materials/effect";
 import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";*/
 import {PointLight} from "@babylonjs/core/Lights/pointLight";
-import "@babylonjs/core/Materials/standardMaterial";
+import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Loading/loadingScreen";
 
@@ -36,13 +35,6 @@ camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
-const ground = MeshBuilder.CreateGround("ground", {width: 10, height: 10}, scene);
-const groundMaterial = new StandardMaterial("groundMaterial", scene);
-groundMaterial.specularColor.scaleInPlace(0);
-groundMaterial.diffuseColor.copyFromFloats(0.5, 0.5, 0.5);
-
-ground.material = groundMaterial;
-
 const highQualityGrassBlade = makeGrassBlade(scene, 4);
 highQualityGrassBlade.isVisible = false;
 
@@ -58,15 +50,25 @@ lowQualityGrassBlade.material = material;
 const patchSize = 10;
 const patchResolution = 50;
 const fieldPosition = new Vector3(0, 0, 0);
-const fieldRadius = 4;
+const fieldRadius = 3;
+
+enum LOD_LEVEL {
+    HIGH,
+    LOW
+}
+
+const map = new Map<Vector3, [InstancedMesh[], LOD_LEVEL, number]>();
 
 for (let x = -fieldRadius; x < fieldRadius; x++) {
     for (let z = -fieldRadius; z < fieldRadius; z++) {
         const radiusSquared = x * x + z * z;
         if (radiusSquared > fieldRadius * fieldRadius) continue;
         const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
-        const grassBlade = radiusSquared < 2 * 2 ? highQualityGrassBlade : lowQualityGrassBlade;
-        makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
+        const isHighQuality = Vector3.Distance(patchPosition, camera.position) < patchSize * 2;
+        const grassBlade = isHighQuality ? highQualityGrassBlade : lowQualityGrassBlade;
+        const instances = makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
+
+        map.set(patchPosition, [instances, isHighQuality ? LOD_LEVEL.HIGH : LOD_LEVEL.LOW, patchSize]);
     }
 }
 
@@ -75,12 +77,44 @@ for (let x = -fieldRadius; x < fieldRadius; x++) {
 
 let clock = 0;
 
+function swap(oldInstance: InstancedMesh, newInstance: InstancedMesh) {
+    newInstance.position.copyFrom(oldInstance.position);
+    newInstance.rotation.copyFrom(oldInstance.rotation);
+    newInstance.scaling.copyFrom(oldInstance.scaling);
+    oldInstance.dispose();
+}
+
 function updateScene() {
     const deltaTime = engine.getDeltaTime() / 1000;
     clock += deltaTime;
 
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
+
+    // update grass LOD
+    for (const patchPosition of map.keys()) {
+        const distanceToCamera = Vector3.Distance(patchPosition, camera.position);
+        const patchData = map.get(patchPosition);
+        if (!patchData) {
+            throw new Error("Patch data not found");
+        }
+        const [instances, quality, patchSize] = patchData;
+
+        const isHighQuality = distanceToCamera < patchSize * 2;
+        if (isHighQuality && quality === LOD_LEVEL.HIGH) continue;
+        if (!isHighQuality && quality === LOD_LEVEL.LOW) continue;
+
+        const newInstances = [];
+        for (const instance of instances) {
+            const bladeType = isHighQuality ? highQualityGrassBlade : lowQualityGrassBlade;
+            const newInstance = bladeType.createInstance(instance.name);
+            swap(instance, newInstance);
+            newInstances.push(newInstance);
+        }
+
+        const newQuality = isHighQuality ? LOD_LEVEL.HIGH : LOD_LEVEL.LOW;
+        map.set(patchPosition, [newInstances, newQuality, patchSize]);
+    }
 }
 
 scene.executeWhenReady(() => {
