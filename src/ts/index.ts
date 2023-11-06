@@ -12,6 +12,8 @@ import "@babylonjs/core/Loading/loadingScreen";
 
 import "../styles/index.scss";
 import {makeGrassBlade} from "./grassBlade";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import {ArcRotateCamera, DirectionalLight} from "@babylonjs/core";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -23,13 +25,16 @@ const engine = new Engine(canvas);
 
 const scene = new Scene(engine);
 
-const camera = new FreeCamera("camera", new Vector3(0, 6, -10), scene);
-camera.setTarget(Vector3.Zero());
+const camera = new ArcRotateCamera("camera", 3.14/2, 1, 15, Vector3.Zero(), scene);
 camera.attachControl();
 
-const light = new PointLight("light", new Vector3(-5, 5, 10), scene);
+new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
 const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
+const groundMaterial = new StandardMaterial("groundMaterial", scene);
+groundMaterial.specularColor.scaleInPlace(0);
+
+ground.material = groundMaterial;
 
 const grassBlade = makeGrassBlade(scene, 5);
 grassBlade.isVisible = false;
@@ -37,13 +42,16 @@ grassBlade.isVisible = false;
 const grassBlades = [];
 const patchSize = 10;
 const patchResolution = 20;
+const cellSize = patchSize / patchResolution;
 const patchPosition = new Vector3(0, 0, 0);
 
 for(let x = 0; x < patchResolution; x++) {
     for(let z = 0; z < patchResolution; z++) {
         const blade = grassBlade.createInstance(`blade${x}${z}`);
-        blade.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2;
-        blade.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2;
+        const randomCellPositionX = Math.random() * cellSize;
+        const randomCellPositionZ = Math.random() * cellSize;
+        blade.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2 + randomCellPositionX;
+        blade.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2 + randomCellPositionZ;
         grassBlades.push(blade);
     }
 }

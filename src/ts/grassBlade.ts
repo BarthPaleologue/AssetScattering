@@ -2,7 +2,6 @@ import {Color3} from "@babylonjs/core/Maths/math.color";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData";
 import {Scene} from "@babylonjs/core/scene";
-import {PBRMaterial} from "@babylonjs/core/Materials/PBR/pbrMaterial";
 import {StandardMaterial} from "@babylonjs/core";
 
 export function makeGrassBlade(scene: Scene, nbStacks: number) {
@@ -19,11 +18,11 @@ export function makeGrassBlade(scene: Scene, nbStacks: number) {
     let indexIndex = 0;
     const step = 1 / nbStacks;
     for (let i = 0; i < nbStacks; i++) {
-        positions[vertexIndex++] = -0.1;
+        positions[vertexIndex++] = -0.05 - 0.05 * (nbStacks - i) * step;
         positions[vertexIndex++] = i * step;
         positions[vertexIndex++] = 0;
 
-        positions[vertexIndex++] = 0.1;
+        positions[vertexIndex++] = 0.05 + 0.05 * (nbStacks - i) * step;
         positions[vertexIndex++] = i * step;
         positions[vertexIndex++] = 0;
 
@@ -72,7 +71,7 @@ export function makeGrassBlade(scene: Scene, nbStacks: number) {
 
     const material = new StandardMaterial("grassBladeMaterial", scene);
     material.backFaceCulling = false;
-    material.diffuseColor = new Color3(0.5, 1, 0.5);
+    material.diffuseColor = new Color3(0.0, 0.5, 0.0);
 
     mesh.material = material;
 
