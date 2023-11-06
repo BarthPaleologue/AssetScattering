@@ -4,13 +4,21 @@ uniform float time;
 
 uniform vec3 lightDirection;
 
+in vec3 vPosition;
+
 in mat4 normalMatrix;
-in vec3 vNormal;
+in vec3 vNormal1;
+in vec3 vNormal2;
 
 void main() {
     vec3 finalColor = vec3(0.0, 0.4, 0.0);
 
-    vec3 normalW = normalize((normalMatrix * vec4(vNormal, 0.0)).xyz);
+    float normalBlending = vPosition.x + 0.5;
+
+    vec3 normal = mix(vNormal1, vNormal2, normalBlending);
+    normal = normalize(normal);
+
+    vec3 normalW = normalize((normalMatrix * vec4(normal, 0.0)).xyz);
 
     float ndl1 = max(dot(normalW, lightDirection), 0.0);
     float ndl2 = max(dot(-normalW, lightDirection), 0.0);
