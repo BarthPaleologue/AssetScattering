@@ -53,20 +53,15 @@ const patchResolution = 50;
 const fieldPosition = new Vector3(0, 0, 0);
 const fieldRadius = 3;
 
-enum LOD_LEVEL {
-    HIGH,
-    LOW
-}
-
 function computeLodLevel(distance: number, patchSize: number) {
-    return distance < patchSize * 2 ? LOD_LEVEL.HIGH : LOD_LEVEL.LOW;
+    return distance < patchSize * 2 ? 1 : 0;
 }
 
-const bladeMeshMap = new Map<LOD_LEVEL, Mesh>();
-bladeMeshMap.set(LOD_LEVEL.HIGH, highQualityGrassBlade);
-bladeMeshMap.set(LOD_LEVEL.LOW, lowQualityGrassBlade);
+const bladeMeshFromLod = new Array<Mesh>(2);
+bladeMeshFromLod[0] = lowQualityGrassBlade;
+bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const map = new Map<Vector3, [InstancedMesh[], LOD_LEVEL, number]>();
+const map = new Map<Vector3, [InstancedMesh[], number, number]>();
 
 for (let x = -fieldRadius; x <= fieldRadius; x++) {
     for (let z = -fieldRadius; z <= fieldRadius; z++) {
@@ -75,7 +70,7 @@ for (let x = -fieldRadius; x <= fieldRadius; x++) {
 
         const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
         const lodLevel = computeLodLevel(Vector3.Distance(patchPosition, camera.position), patchSize);
-        const grassBlade = bladeMeshMap.get(lodLevel) as Mesh;
+        const grassBlade = bladeMeshFromLod[lodLevel];
         const instances = makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
 
         map.set(patchPosition, [instances, lodLevel, patchSize]);
@@ -108,22 +103,20 @@ function updateScene() {
         if (!patchData) {
             throw new Error("Patch data not found");
         }
-        const [instances, quality, patchSize] = patchData;
+        const [instances, currentLod, patchSize] = patchData;
 
-        const isHighQuality = distanceToCamera < patchSize * 2;
-        if (isHighQuality && quality === LOD_LEVEL.HIGH) continue;
-        if (!isHighQuality && quality === LOD_LEVEL.LOW) continue;
+        const newLod = computeLodLevel(distanceToCamera, patchSize);
+        if (newLod === currentLod) continue;
 
         const newInstances = [];
         for (const instance of instances) {
-            const bladeType = isHighQuality ? highQualityGrassBlade : lowQualityGrassBlade;
+            const bladeType = bladeMeshFromLod[newLod];
             const newInstance = bladeType.createInstance(instance.name);
             swap(instance, newInstance);
             newInstances.push(newInstance);
         }
 
-        const newQuality = isHighQuality ? LOD_LEVEL.HIGH : LOD_LEVEL.LOW;
-        map.set(patchPosition, [newInstances, newQuality, patchSize]);
+        map.set(patchPosition, [newInstances, newLod, patchSize]);
     }
 }
 
