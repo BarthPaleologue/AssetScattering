@@ -1,21 +1,24 @@
-import { Engine } from "@babylonjs/core/Engines/engine";
-import { Scene } from "@babylonjs/core/scene";
-import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import {Engine} from "@babylonjs/core/Engines/engine";
+import {Scene} from "@babylonjs/core/scene";
+import {FreeCamera} from "@babylonjs/core/Cameras/freeCamera";
+import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
 /*import { Effect } from "@babylonjs/core/Materials/effect";
 import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";*/
-import { PointLight } from "@babylonjs/core/Lights/pointLight";
+import {PointLight} from "@babylonjs/core/Lights/pointLight";
 import "@babylonjs/core/Materials/standardMaterial";
+import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Loading/loadingScreen";
 
 import "../styles/index.scss";
 import {makeGrassBlade} from "./grassBlade";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import {ArcRotateCamera, DirectionalLight} from "@babylonjs/core";
 import {makeGrassMaterial} from "./grassMaterial";
 import {makeInstancePatch} from "./instancePatch";
+
+import perlinNoise from "../assets/perlin.png";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -27,13 +30,13 @@ const engine = new Engine(canvas);
 
 const scene = new Scene(engine);
 
-const camera = new ArcRotateCamera("camera", 3.14/2, 1, 15, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera("camera", 3.14 / 2, 1, 15, Vector3.Zero(), scene);
 camera.lowerRadiusLimit = 1;
 camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
-const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
+const ground = MeshBuilder.CreateGround("ground", {width: 10, height: 10}, scene);
 const groundMaterial = new StandardMaterial("groundMaterial", scene);
 groundMaterial.specularColor.scaleInPlace(0);
 groundMaterial.diffuseColor.copyFromFloats(0.5, 0.5, 0.5);
@@ -48,6 +51,7 @@ lowQualityGrassBlade.isVisible = false;
 
 const material = makeGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
+material.setTexture("perlinNoise", new Texture(perlinNoise, scene));
 highQualityGrassBlade.material = material;
 lowQualityGrassBlade.material = material;
 
@@ -56,10 +60,10 @@ const patchResolution = 50;
 const fieldPosition = new Vector3(0, 0, 0);
 const fieldRadius = 4;
 
-for(let x = -fieldRadius; x < fieldRadius; x++) {
-    for(let z = -fieldRadius; z < fieldRadius; z++) {
+for (let x = -fieldRadius; x < fieldRadius; x++) {
+    for (let z = -fieldRadius; z < fieldRadius; z++) {
         const radiusSquared = x * x + z * z;
-        if(radiusSquared > fieldRadius * fieldRadius) continue;
+        if (radiusSquared > fieldRadius * fieldRadius) continue;
         const patchPosition = new Vector3(x * patchSize, 0, z * patchSize).addInPlace(fieldPosition);
         const grassBlade = radiusSquared < 2 * 2 ? highQualityGrassBlade : lowQualityGrassBlade;
         makeInstancePatch(grassBlade, patchPosition, patchSize, patchResolution);
@@ -70,6 +74,7 @@ for(let x = -fieldRadius; x < fieldRadius; x++) {
 //const postProcess = new PostProcess("postProcess1", "PostProcess1", [], ["textureSampler"], 1, camera, Texture.BILINEAR_SAMPLINGMODE, engine);
 
 let clock = 0;
+
 function updateScene() {
     const deltaTime = engine.getDeltaTime() / 1000;
     clock += deltaTime;

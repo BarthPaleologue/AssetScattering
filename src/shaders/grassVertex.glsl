@@ -10,6 +10,8 @@ uniform vec3 cameraPosition;
 
 uniform float time;
 
+uniform sampler2D perlinNoise;
+
 out vec3 vPosition;
 
 out mat4 normalMatrix;
@@ -30,8 +32,6 @@ float easeIn(float t, float alpha) {
     return pow(t, alpha);
 }
 
-#pragma glslify: perlin3 = require(./perlin3.glsl)
-
 #pragma glslify: remap = require(./remap.glsl)
 
 #include<instancesDeclaration>
@@ -46,8 +46,8 @@ void main() {
 
     // wind
     vec3 objectWorld = (finalWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-    float windStrength = perlin3(objectWorld * 0.35 + time);
-    float windDir = perlin3(objectWorld * 0.05 + 0.05 * time) * 2.0 * 3.14;
+    float windStrength = texture2D(perlinNoise, objectWorld.xz * 0.007 + 0.1 * time).r;
+    float windDir = texture2D(perlinNoise, objectWorld.xz * 0.005 + 0.05 * time).r * 2.0 * 3.14;
 
     float windLeanAngle = remap(windStrength, 0.0, 1.0, 0.25, 1.0);
     windLeanAngle = easeIn(windLeanAngle, 2.0) * 1.25;

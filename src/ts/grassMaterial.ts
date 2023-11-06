@@ -13,7 +13,8 @@ export function makeGrassMaterial(scene: Scene) {
     const grassMaterial = new ShaderMaterial("grassMaterial", scene, shaderName, {
         attributes: ["position", "normal"],
         uniforms: ["world", "view", "projection", "time", "lightDirection", "cameraPosition"],
-        defines: ["#define INSTANCES"]
+        defines: ["#define INSTANCES"],
+        samplers: ["perlinNoise"]
     });
 
     grassMaterial.backFaceCulling = false;
