@@ -14,6 +14,7 @@ import "../styles/index.scss";
 import {makeGrassBlade} from "./grassBlade";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import {ArcRotateCamera, DirectionalLight} from "@babylonjs/core";
+import {makeGrassMaterial} from "./grassMaterial";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -28,7 +29,7 @@ const scene = new Scene(engine);
 const camera = new ArcRotateCamera("camera", 3.14/2, 1, 15, Vector3.Zero(), scene);
 camera.attachControl();
 
-new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
+const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
 const ground = MeshBuilder.CreateGround("ground", { width: 10, height: 10 }, scene);
 const groundMaterial = new StandardMaterial("groundMaterial", scene);
@@ -38,6 +39,10 @@ ground.material = groundMaterial;
 
 const grassBlade = makeGrassBlade(scene, 5);
 grassBlade.isVisible = false;
+
+const material = makeGrassMaterial(scene);
+material.setVector3("lightDirection", light.direction);
+grassBlade.material = material;
 
 const grassBlades = [];
 const patchSize = 10;

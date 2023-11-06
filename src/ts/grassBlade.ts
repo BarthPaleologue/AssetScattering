@@ -70,12 +70,5 @@ export function makeGrassBlade(scene: Scene, nbStacks: number) {
 
     vertexData.applyToMesh(mesh);
 
-    /*const material = new StandardMaterial("grassBladeMaterial", scene);
-    material.backFaceCulling = false;
-    material.diffuseColor = new Color3(0.0, 0.5, 0.0);*/
-
-    const material = makeGrassMaterial(scene);
-    mesh.material = material;
-
     return mesh;
 }

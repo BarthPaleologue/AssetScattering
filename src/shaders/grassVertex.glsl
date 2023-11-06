@@ -5,6 +5,9 @@ attribute vec3 normal;
 
 uniform mat4 viewProjection;
 
+out mat4 normalMatrix;
+out vec3 vNormal;
+
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 vec3 rotateAround(vec3 vector, vec3 axis, float theta) {
     // Please note that unit vector are required, i did not divided by the norms
@@ -22,4 +25,7 @@ void main() {
 
     vec4 outPosition = viewProjection * finalWorld * vec4(rotatedPosition, 1.0);
     gl_Position = outPosition;
+
+    normalMatrix = transpose(inverse(finalWorld));
+    vNormal = normal;
 }
