@@ -52,6 +52,7 @@ for(let x = 0; x < patchResolution; x++) {
         const randomCellPositionZ = Math.random() * cellSize;
         blade.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2 + randomCellPositionX;
         blade.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2 + randomCellPositionZ;
+        blade.rotation.y = Math.random() * 2 * Math.PI;
         grassBlades.push(blade);
     }
 }
