@@ -3,6 +3,7 @@ import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData";
 import {Scene} from "@babylonjs/core/scene";
 import {StandardMaterial} from "@babylonjs/core";
+import {makeGrassMaterial} from "./grassMaterial";
 
 export function makeGrassBlade(scene: Scene, nbStacks: number) {
     const mesh = new Mesh("grassBlade", scene);
@@ -69,10 +70,11 @@ export function makeGrassBlade(scene: Scene, nbStacks: number) {
 
     vertexData.applyToMesh(mesh);
 
-    const material = new StandardMaterial("grassBladeMaterial", scene);
+    /*const material = new StandardMaterial("grassBladeMaterial", scene);
     material.backFaceCulling = false;
-    material.diffuseColor = new Color3(0.0, 0.5, 0.0);
+    material.diffuseColor = new Color3(0.0, 0.5, 0.0);*/
 
+    const material = makeGrassMaterial(scene);
     mesh.material = material;
 
     return mesh;
