@@ -34,5 +34,9 @@ void main() {
     // ambient lighting
     ndl = clamp(ndl + 0.1, 0.0, 1.0);
 
-    gl_FragColor = vec4(finalColor * ndl, 1.0);// apply color and lighting
+    float density = 0.2;
+    float aoForDensity = mix(1.0, 0.25, density);
+    float ao = mix(aoForDensity, 1.0, easeIn(vPosition.y, 2.0));
+
+    gl_FragColor = vec4(finalColor * ndl * ao, 1.0);// apply color and lighting
 } 
