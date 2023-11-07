@@ -59,7 +59,7 @@ bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
 const scatterer = new InstanceScatterer(bladeMeshFromLod, patchSize, (patch: InstancePatch) => {
-    const distance = Vector3.Distance(patch.patchPosition, camera.position);
+    const distance = Vector3.Distance(patch.position, camera.position);
     return distance < patchSize * 2 ? 1 : 0;
 });
 

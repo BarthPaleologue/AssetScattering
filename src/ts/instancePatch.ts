@@ -4,16 +4,16 @@ import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 
 export class InstancePatch {
     instances: InstancedMesh[];
-    readonly patchPosition: Vector3;
-    readonly patchSize: number;
-    readonly patchResolution: number;
+    readonly position: Vector3;
+    readonly size: number;
+    readonly resolution: number;
     lod: number;
 
     constructor(baseMeshFromLOD: Mesh[], lod: number, patchPosition: Vector3, patchSize: number, patchResolution: number) {
         this.instances = InstancePatch.Scatter(baseMeshFromLOD[lod], patchPosition, patchSize, patchResolution);
-        this.patchPosition = patchPosition;
-        this.patchSize = patchSize;
-        this.patchResolution = patchResolution;
+        this.position = patchPosition;
+        this.size = patchSize;
+        this.resolution = patchResolution;
         this.lod = lod;
     }
 

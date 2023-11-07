@@ -10,12 +10,12 @@ function rotateAround(vector: Vector3, axis: Vector3, theta: number) {
 }
 
 export function makeGrassBlade(scene: Scene, nbStacks: number) {
-    const mesh = new Mesh("grassBlade", scene);
-
     const nbVertices = 2 * nbStacks + 1;
+    const nbTriangles = 2 * (nbStacks - 1) + 1;
+
     const positions = new Float32Array(nbVertices * 3);
     const normals = new Float32Array(nbVertices * 3);
-    const indices = new Uint32Array((2 * (nbStacks - 1) + 1) * 3);
+    const indices = new Uint32Array(nbTriangles * 3);
 
     const normal = new Vector3(0, 0, 1);
     const curvyNormal1 = rotateAround(normal, new Vector3(0, 1, 0), Math.PI * 0.3);
@@ -76,7 +76,8 @@ export function makeGrassBlade(scene: Scene, nbStacks: number) {
     vertexData.normals = normals;
     vertexData.indices = indices;
 
-    vertexData.applyToMesh(mesh);
+    const grassBlade = new Mesh("grassBlade", scene);
+    vertexData.applyToMesh(grassBlade);
 
-    return mesh;
+    return grassBlade;
 }
