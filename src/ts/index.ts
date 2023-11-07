@@ -9,7 +9,7 @@ import "@babylonjs/core/Loading/loadingScreen";
 
 import "../styles/index.scss";
 import {makeGrassBlade} from "./grassBlade";
-import {ArcRotateCamera, DirectionalLight, MeshBuilder} from "@babylonjs/core";
+import {ArcRotateCamera, DirectionalLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
 import {makeGrassMaterial} from "./grassMaterial";
 
 import perlinNoise from "../assets/perlin.png";
@@ -27,8 +27,10 @@ engine.displayLoadingUI();
 
 const scene = new Scene(engine);
 
-const camera = new ArcRotateCamera("camera", 3.14 / 2, 1, 15, Vector3.Zero(), scene);
-camera.lowerRadiusLimit = 1;
+const camera = new ArcRotateCamera("camera", 3.14 / 2, 1.4, 15, Vector3.Zero(), scene);
+camera.lowerRadiusLimit = 3;
+camera.upperBetaLimit = 3.14 / 2 - 0.1;
+camera.minZ = 0.1;
 camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
@@ -50,6 +52,11 @@ const ground = MeshBuilder.CreateGround("ground", {
     width: patchSize * (fieldRadius + 1) * 2,
     height: patchSize * (fieldRadius + 1) * 2
 }, scene);
+
+const groundMaterial = new StandardMaterial("groundMaterial", scene);
+groundMaterial.diffuseColor.set(0.4, 0.3, 0.3);
+groundMaterial.specularColor.set(0, 0, 0);
+ground.material = groundMaterial;
 
 /*const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
