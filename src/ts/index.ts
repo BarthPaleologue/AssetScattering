@@ -29,7 +29,7 @@ camera.upperBetaLimit = 3.14 / 2 - 0.1;
 camera.minZ = 0.1;
 camera.attachControl();
 
-const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
+const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 
 createSkybox(scene, light.direction.scale(-1));
 
