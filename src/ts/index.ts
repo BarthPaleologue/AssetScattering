@@ -9,13 +9,12 @@ import "@babylonjs/core/Loading/loadingScreen";
 
 import "../styles/index.scss";
 import {makeGrassBlade} from "./grassBlade";
-import {ArcRotateCamera, DirectionalLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
+import {ArcRotateCamera, DirectionalLight, MeshBuilder} from "@babylonjs/core";
 import {makeGrassMaterial} from "./grassMaterial";
-import {InstancePatch} from "./instancePatch";
 
 import perlinNoise from "../assets/perlin.png";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {InstanceScatterer} from "./instanceScatterer";
+import {ThinInstanceScatterer} from "./thinInstanceScatterer";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -53,10 +52,7 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const scatterer = new InstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: InstancePatch) => {
-    const distance = Vector3.Distance(patch.position, camera.position);
-    return distance < patchSize * 2 ? 1 : 0;
-});
+const scatterer = new ThinInstanceScatterer(highQualityGrassBlade, fieldRadius, patchSize, patchResolution);
 
 //Effect.ShadersStore[`PostProcess1FragmentShader`] = postprocessCode;
 //const postProcess = new PostProcess("postProcess1", "PostProcess1", [], ["textureSampler"], 1, camera, Texture.BILINEAR_SAMPLINGMODE, engine);
