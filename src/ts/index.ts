@@ -31,8 +31,6 @@ const camera = new ArcRotateCamera("camera", 3.14 / 2, 1, 15, Vector3.Zero(), sc
 camera.lowerRadiusLimit = 1;
 camera.attachControl();
 
-const ground = MeshBuilder.CreateGround("ground", {width: 10, height: 10}, scene);
-
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
 const highQualityGrassBlade = makeGrassBlade(scene, 4);
@@ -48,9 +46,14 @@ const patchSize = 10;
 const patchResolution = 50;
 const fieldRadius = 7;
 
-const bladeMeshFromLod = new Array<Mesh>(2);
+const ground = MeshBuilder.CreateGround("ground", {
+    width: patchSize * (fieldRadius + 1) * 2,
+    height: patchSize * (fieldRadius + 1) * 2
+}, scene);
+
+/*const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
-bladeMeshFromLod[1] = highQualityGrassBlade;
+bladeMeshFromLod[1] = highQualityGrassBlade;*/
 
 const scatterer = new ThinInstanceScatterer(highQualityGrassBlade, fieldRadius, patchSize, patchResolution);
 
