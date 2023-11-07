@@ -1,8 +1,6 @@
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {InstancePatch} from "./instancePatch";
-import { Camera } from "@babylonjs/core/Cameras/camera";
-import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 
 export class InstanceScatterer {
     readonly meshFromLod: Mesh[];
@@ -20,17 +18,29 @@ export class InstanceScatterer {
         this.radius = radius;
         this.computeLodLevel = computeLodLevel;
 
+        const matricesByLod: Float32Array[][] = [];
+        for(let lod = 0; lod < this.meshFromLod.length; lod++) {
+            matricesByLod.push([]);
+        }
+        const lods = new Set<number>();
+
         for (let x = -this.radius; x <= this.radius; x++) {
             for (let z = -this.radius; z <= this.radius; z++) {
                 const radiusSquared = x * x + z * z;
                 if (radiusSquared > this.radius * this.radius) continue;
 
                 const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
-                const patch = new InstancePatch(this.meshFromLod, 1, patchPosition, patchSize, patchResolution);
+                const patch = new InstancePatch( 1, patchPosition, patchSize, patchResolution);
+                patch.setLOD(this.computeLodLevel(patch));
+
+                matricesByLod[patch.lod].push(patch.matrixBuffer);
+                lods.add(patch.lod);
 
                 this.map.set(patchPosition, patch);
             }
         }
+
+        this.updateLodMatrices(lods, matricesByLod);
     }
 
     update() {
@@ -56,8 +66,11 @@ export class InstanceScatterer {
             matrixBuffersByLod[patch.lod].push(patch.matrixBuffer);
         }
 
-        for(const lod of changedLODs) {
-            console.log("Updating LOD " + lod);
+        this.updateLodMatrices(changedLODs, matrixBuffersByLod);
+    }
+
+    private updateLodMatrices(lods: Set<number>, matrixBuffersByLod: Float32Array[][]) {
+        for(const lod of lods) {
             const mesh = this.meshFromLod[lod];
             const matrixBuffers = matrixBuffersByLod[lod];
 
