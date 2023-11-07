@@ -2,7 +2,15 @@ import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 
+function swap(oldInstance: InstancedMesh, newInstance: InstancedMesh) {
+    newInstance.position.copyFrom(oldInstance.position);
+    newInstance.rotation.copyFrom(oldInstance.rotation);
+    newInstance.scaling.copyFrom(oldInstance.scaling);
+    oldInstance.dispose();
+}
+
 export class InstancePatch {
+    private readonly meshFromLod: Mesh[];
     instances: InstancedMesh[];
     readonly position: Vector3;
     readonly size: number;
@@ -10,10 +18,26 @@ export class InstancePatch {
     lod: number;
 
     constructor(baseMeshFromLOD: Mesh[], lod: number, patchPosition: Vector3, patchSize: number, patchResolution: number) {
+        this.meshFromLod = baseMeshFromLOD;
         this.instances = InstancePatch.Scatter(baseMeshFromLOD[lod], patchPosition, patchSize, patchResolution);
         this.position = patchPosition;
         this.size = patchSize;
         this.resolution = patchResolution;
+        this.lod = lod;
+    }
+
+    setLOD(lod: number) {
+        if (lod === this.lod) return;
+
+        const newInstances = [];
+        for (const instance of this.instances) {
+            const bladeType = this.meshFromLod[lod];
+            const newInstance = bladeType.createInstance(instance.name);
+            swap(instance, newInstance);
+            newInstances.push(newInstance);
+        }
+
+        this.instances = newInstances;
         this.lod = lod;
     }
 

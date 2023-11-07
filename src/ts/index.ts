@@ -72,7 +72,7 @@ function updateScene() {
     material.setFloat("time", clock);
 
     // update grass LOD
-    scatterer.update(camera);
+    scatterer.update();
 }
 
 scene.executeWhenReady(() => {
