@@ -9,7 +9,7 @@ import "@babylonjs/core/Loading/loadingScreen";
 
 import "../styles/index.scss";
 import {makeGrassBlade} from "./grassBlade";
-import {ArcRotateCamera, DirectionalLight} from "@babylonjs/core";
+import {ArcRotateCamera, DirectionalLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
 import {makeGrassMaterial} from "./grassMaterial";
 import {InstancePatch} from "./instancePatch";
 
@@ -32,13 +32,12 @@ const camera = new ArcRotateCamera("camera", 3.14 / 2, 1, 15, Vector3.Zero(), sc
 camera.lowerRadiusLimit = 1;
 camera.attachControl();
 
+const ground = MeshBuilder.CreateGround("ground", {width: 10, height: 10}, scene);
+
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
 const highQualityGrassBlade = makeGrassBlade(scene, 4);
-highQualityGrassBlade.isVisible = false;
-
 const lowQualityGrassBlade = makeGrassBlade(scene, 2);
-lowQualityGrassBlade.isVisible = false;
 
 const material = makeGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
@@ -48,7 +47,7 @@ lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = 50;
-const fieldRadius = 3;
+const fieldRadius = 0;
 
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
@@ -72,7 +71,7 @@ function updateScene() {
     material.setFloat("time", clock);
 
     // update grass LOD
-    scatterer.update();
+    //scatterer.update();
 }
 
 scene.executeWhenReady(() => {

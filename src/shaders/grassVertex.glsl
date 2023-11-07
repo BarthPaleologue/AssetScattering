@@ -1,7 +1,7 @@
 precision highp float;
 
-attribute vec3 position;
-attribute vec3 normal;
+in vec3 position;
+in vec3 normal;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -57,9 +57,9 @@ void main() {
     vec4 worldPosition = finalWorld * vec4(leaningPosition, 1.0);
 
 
-    /*vec3 viewDir = normalize(cameraPosition - worldPosition);
-    float viewDotNormal = abs(dot(viewDir, leaningNormal));
-    float viewSpaceThickenFactor = easeOut(1.0 - viewDotNormal, 4.0);*/
+    //vec3 viewDir = normalize(cameraPosition - worldPosition);
+    //float viewDotNormal = abs(dot(viewDir, leaningNormal));
+    //float viewSpaceThickenFactor = easeOut(1.0 - viewDotNormal, 4.0);
 
     //viewSpaceThickenFactor *= smoothstep(0.0, 0.2, viewDotNormal);
 
