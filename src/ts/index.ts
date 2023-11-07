@@ -15,6 +15,7 @@ import {makeGrassMaterial} from "./grassMaterial";
 import perlinNoise from "../assets/perlin.png";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {ThinInstanceScatterer} from "./thinInstanceScatterer";
+import {SkyMaterial} from "@babylonjs/materials";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -34,6 +35,15 @@ camera.minZ = 0.1;
 camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
+
+const skyMaterial = new SkyMaterial("skyMaterial", scene);
+skyMaterial.backFaceCulling = false;
+//skyMaterial.inclination = 0.2;
+skyMaterial.sunPosition = light.direction.scale(-1);
+skyMaterial.useSunPosition = true;
+
+const skybox = MeshBuilder.CreateBox("skyBox", {size: 1000}, scene);
+skybox.material = skyMaterial;
 
 const highQualityGrassBlade = makeGrassBlade(scene, 4);
 const lowQualityGrassBlade = makeGrassBlade(scene, 2);

@@ -8,6 +8,9 @@ devDependencies:
   '@babylonjs/core':
     specifier: ^6.28.1
     version: 6.28.1
+  '@babylonjs/materials':
+    specifier: ^6.28.1
+    version: 6.28.1(@babylonjs/core@6.28.1)
   '@typescript-eslint/eslint-plugin':
     specifier: ^5.62.0
     version: 5.62.0(@typescript-eslint/parser@5.62.0)(eslint@8.53.0)(typescript@4.9.5)
@@ -110,6 +113,14 @@ packages:
 
   /@babylonjs/core@6.28.1:
     resolution: {integrity: sha512-7D0L//yQDq0WU5Mj6os3fGNoy8dtCONgRJ2ji2PMNwZlQ6jH3e5OnoaMYss1QuNCoGeTrXbNuNa7z8RezuFrCQ==}
+    dev: true
+
+  /@babylonjs/materials@6.28.1(@babylonjs/core@6.28.1):
+    resolution: {integrity: sha512-RM5k4JlC2r5McnLg5js3hdi6MgVnrTYhwhy6ypYR3SXxHxKvEpGLygYjdURuffBKc10JhaF0OEdwbrFCqggRQg==}
+    peerDependencies:
+      '@babylonjs/core': ^6.0.0
+    dependencies:
+      '@babylonjs/core': 6.28.1
     dev: true
 
   /@choojs/findup@0.2.1:
