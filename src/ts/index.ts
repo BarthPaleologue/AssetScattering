@@ -1,9 +1,6 @@
 import {Engine} from "@babylonjs/core/Engines/engine";
 import {Scene} from "@babylonjs/core/scene";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
-/*import { Effect } from "@babylonjs/core/Materials/effect";
-import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
-import { Texture } from "@babylonjs/core/Materials/Textures/texture";*/
 import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Loading/loadingScreen";
 
@@ -13,12 +10,9 @@ import {ArcRotateCamera, DirectionalLight, MeshBuilder, StandardMaterial} from "
 import {createGrassMaterial} from "./grassMaterial";
 
 import perlinNoise from "../assets/perlin.png";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {ThinInstanceScatterer} from "./thinInstanceScatterer";
-import {SkyMaterial} from "@babylonjs/materials";
 import {createSkybox} from "./skybox";
-
-//import postprocessCode from "../shaders/smallPostProcess.glsl";
+import {UI} from "./ui";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -39,18 +33,24 @@ const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace
 
 createSkybox(scene, light.direction.scale(-1));
 
+const perlinTexture = new Texture(perlinNoise, scene);
+
 const highQualityGrassBlade = createGrassBlade(scene, 4);
-const lowQualityGrassBlade = createGrassBlade(scene, 2);
 
 const material = createGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
-material.setTexture("perlinNoise", new Texture(perlinNoise, scene));
+material.setTexture("perlinNoise", perlinTexture);
 highQualityGrassBlade.material = material;
-lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = 50;
-const fieldRadius = 7;
+const fieldRadius = 9;
+
+/*const bladeMeshFromLod = new Array<Mesh>(2);
+bladeMeshFromLod[0] = lowQualityGrassBlade;
+bladeMeshFromLod[1] = highQualityGrassBlade;*/
+
+const grassScatterer = new ThinInstanceScatterer(highQualityGrassBlade, fieldRadius, patchSize, patchResolution);
 
 const ground = MeshBuilder.CreateGround("ground", {
     width: patchSize * (fieldRadius + 1) * 2,
@@ -62,14 +62,7 @@ groundMaterial.diffuseColor.set(0.4, 0.3, 0.3);
 groundMaterial.specularColor.set(0, 0, 0);
 ground.material = groundMaterial;
 
-/*const bladeMeshFromLod = new Array<Mesh>(2);
-bladeMeshFromLod[0] = lowQualityGrassBlade;
-bladeMeshFromLod[1] = highQualityGrassBlade;*/
-
-const scatterer = new ThinInstanceScatterer(highQualityGrassBlade, fieldRadius, patchSize, patchResolution);
-
-//Effect.ShadersStore[`PostProcess1FragmentShader`] = postprocessCode;
-//const postProcess = new PostProcess("postProcess1", "PostProcess1", [], ["textureSampler"], 1, camera, Texture.BILINEAR_SAMPLINGMODE, engine);
+const ui = new UI(scene);
 
 let clock = 0;
 
@@ -80,8 +73,9 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    // update grass LOD
-    scatterer.update();
+    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades | ${engine.getFps().toFixed(0)} FPS`);
+
+    grassScatterer.update();
 }
 
 scene.executeWhenReady(() => {

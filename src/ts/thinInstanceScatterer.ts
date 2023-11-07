@@ -18,7 +18,7 @@ export class ThinInstanceScatterer {
         for (let x = -this.radius; x <= this.radius; x++) {
             for (let z = -this.radius; z <= this.radius; z++) {
                 const radiusSquared = x * x + z * z;
-                if (radiusSquared > this.radius * this.radius) continue;
+                if (radiusSquared >= this.radius * this.radius) continue;
 
                 const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
                 const patch = new ThinInstancePatch(patchPosition, patchSize, patchResolution);
@@ -34,18 +34,24 @@ export class ThinInstanceScatterer {
         // do nothing for now
     }
 
+    getNbThinInstances() {
+        return this.map.size * this.patchResolution * this.patchResolution;
+    }
+
     private updateMatrices() {
         const nbPatches = this.map.size;
         const totalLength = nbPatches > 0 ? nbPatches * 16 * this.patchResolution * this.patchResolution : 0;
         const finalMatrixBuffer = new Float32Array(totalLength);
 
+        console.log(`Updated ${this.getNbThinInstances()} thin instance matrices`);
+
         // concatenate all the matrix buffers in one buffer
         let offset = 0;
-        for(const patch of this.map.values()) {
+        for (const patch of this.map.values()) {
             const matrixBuffer = patch.matrixBuffer;
 
             finalMatrixBuffer.set(matrixBuffer, offset);
-                offset += matrixBuffer.length;
+            offset += matrixBuffer.length;
         }
 
         this.baseMesh.thinInstanceSetBuffer("matrix", finalMatrixBuffer, 16);

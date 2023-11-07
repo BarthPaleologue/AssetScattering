@@ -8,6 +8,9 @@ devDependencies:
   '@babylonjs/core':
     specifier: ^6.28.1
     version: 6.28.1
+  '@babylonjs/gui':
+    specifier: ^6.28.1
+    version: 6.28.1(@babylonjs/core@6.28.1)
   '@babylonjs/materials':
     specifier: ^6.28.1
     version: 6.28.1(@babylonjs/core@6.28.1)
@@ -113,6 +116,14 @@ packages:
 
   /@babylonjs/core@6.28.1:
     resolution: {integrity: sha512-7D0L//yQDq0WU5Mj6os3fGNoy8dtCONgRJ2ji2PMNwZlQ6jH3e5OnoaMYss1QuNCoGeTrXbNuNa7z8RezuFrCQ==}
+    dev: true
+
+  /@babylonjs/gui@6.28.1(@babylonjs/core@6.28.1):
+    resolution: {integrity: sha512-si8REM177m2Pk0DUn1d3xXyfKmOKosK4uY8Dw+eOL8FuCGvGQe5Yuw2qgkw2BbVMkFdg2qSib5vqxaLa97c1kg==}
+    peerDependencies:
+      '@babylonjs/core': ^6.0.0
+    dependencies:
+      '@babylonjs/core': 6.28.1
     dev: true
 
   /@babylonjs/materials@6.28.1(@babylonjs/core@6.28.1):
