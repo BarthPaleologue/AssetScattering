@@ -14,14 +14,30 @@ function swap(oldInstance: InstancedMesh, newInstance: InstancedMesh) {
 export class InstanceScatterer {
     readonly meshFromLod: Mesh[];
     readonly map = new Map<Vector3, InstancePatch>();
-    readonly patchSize;
+    readonly patchSize: number;
+    readonly patchResolution: number;
+    readonly radius: number;
 
     computeLodLevel: (patch: InstancePatch) => number;
 
-    constructor(meshFromLod: Mesh[], patchSize: number, computeLodLevel: (patch: InstancePatch) => number) {
+    constructor(meshFromLod: Mesh[], radius: number, patchSize: number, patchResolution: number, computeLodLevel: (patch: InstancePatch) => number) {
         this.meshFromLod = meshFromLod;
         this.patchSize = patchSize;
+        this.patchResolution = patchResolution;
+        this.radius = radius;
         this.computeLodLevel = computeLodLevel;
+
+        for (let x = -this.radius; x <= this.radius; x++) {
+            for (let z = -this.radius; z <= this.radius; z++) {
+                const radiusSquared = x * x + z * z;
+                if (radiusSquared > this.radius * this.radius) continue;
+
+                const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
+                const patch = new InstancePatch(this.meshFromLod, 0, patchPosition, patchSize, patchResolution);
+
+                this.map.set(patchPosition, patch);
+            }
+        }
     }
 
     update(camera: Camera) {
