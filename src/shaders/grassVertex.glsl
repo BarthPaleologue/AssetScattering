@@ -39,7 +39,7 @@ void main() {
     #include<instancesVertex>
 
     // wind
-    vec3 objectWorld = (finalWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    vec3 objectWorld = world3.xyz;
     float windStrength = texture2D(perlinNoise, objectWorld.xz * 0.007 + 0.1 * time).r;
     float windDir = texture2D(perlinNoise, objectWorld.xz * 0.005 + 0.05 * time).r * 2.0 * 3.14;
 
@@ -54,7 +54,7 @@ void main() {
 
     vec3 leaningNormal = rotateAround(normal, leanAxis, curveAmount);
 
-    vec3 worldPosition = (finalWorld * vec4(leaningPosition, 1.0)).xyz;
+    vec4 worldPosition = finalWorld * vec4(leaningPosition, 1.0);
 
 
     /*vec3 viewDir = normalize(cameraPosition - worldPosition);
@@ -63,7 +63,7 @@ void main() {
 
     //viewSpaceThickenFactor *= smoothstep(0.0, 0.2, viewDotNormal);
 
-    vec4 viewPosition = view * vec4(worldPosition, 1.0);
+    vec4 viewPosition = view * worldPosition;
     //viewPosition.x += viewSpaceThickenFactor * leaningNormal.y;
 
     vec4 outPosition = projection * viewPosition;
