@@ -9,7 +9,7 @@ function rotateAround(vector: Vector3, axis: Vector3, theta: number) {
     return vector.scale(Math.cos(theta)).addInPlace(Vector3.Cross(axis, vector).scaleInPlace(Math.sin(theta))).addInPlace(axis.scale(Vector3.Dot(axis, vector) * (1.0 - Math.cos(theta))));
 }
 
-export function makeGrassBlade(scene: Scene, nbStacks: number) {
+export function createGrassBlade(scene: Scene, nbStacks: number) {
     const nbVertices = 2 * nbStacks + 1;
     const nbTriangles = 2 * (nbStacks - 1) + 1;
 

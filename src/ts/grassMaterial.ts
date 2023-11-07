@@ -5,7 +5,7 @@ import {Scene} from "@babylonjs/core/scene";
 import grassFragment from "../shaders/grassFragment.glsl";
 import grassVertex from "../shaders/grassVertex.glsl";
 
-export function makeGrassMaterial(scene: Scene) {
+export function createGrassMaterial(scene: Scene) {
     const shaderName = "grassMaterial";
     Effect.ShadersStore[`${shaderName}FragmentShader`] = grassFragment;
     Effect.ShadersStore[`${shaderName}VertexShader`] = grassVertex;

@@ -8,14 +8,15 @@ import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Loading/loadingScreen";
 
 import "../styles/index.scss";
-import {makeGrassBlade} from "./grassBlade";
+import {createGrassBlade} from "./grassBlade";
 import {ArcRotateCamera, DirectionalLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
-import {makeGrassMaterial} from "./grassMaterial";
+import {createGrassMaterial} from "./grassMaterial";
 
 import perlinNoise from "../assets/perlin.png";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {ThinInstanceScatterer} from "./thinInstanceScatterer";
 import {SkyMaterial} from "@babylonjs/materials";
+import {createSkybox} from "./skybox";
 
 //import postprocessCode from "../shaders/smallPostProcess.glsl";
 
@@ -28,7 +29,7 @@ engine.displayLoadingUI();
 
 const scene = new Scene(engine);
 
-const camera = new ArcRotateCamera("camera", 3.14 / 2, 1.4, 15, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
 camera.lowerRadiusLimit = 3;
 camera.upperBetaLimit = 3.14 / 2 - 0.1;
 camera.minZ = 0.1;
@@ -36,19 +37,12 @@ camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(-5, 5, 10).negateInPlace().normalize(), scene);
 
-const skyMaterial = new SkyMaterial("skyMaterial", scene);
-skyMaterial.backFaceCulling = false;
-//skyMaterial.inclination = 0.2;
-skyMaterial.sunPosition = light.direction.scale(-1);
-skyMaterial.useSunPosition = true;
+createSkybox(scene, light.direction.scale(-1));
 
-const skybox = MeshBuilder.CreateBox("skyBox", {size: 1000}, scene);
-skybox.material = skyMaterial;
+const highQualityGrassBlade = createGrassBlade(scene, 4);
+const lowQualityGrassBlade = createGrassBlade(scene, 2);
 
-const highQualityGrassBlade = makeGrassBlade(scene, 4);
-const lowQualityGrassBlade = makeGrassBlade(scene, 2);
-
-const material = makeGrassMaterial(scene);
+const material = createGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
 material.setTexture("perlinNoise", new Texture(perlinNoise, scene));
 highQualityGrassBlade.material = material;
