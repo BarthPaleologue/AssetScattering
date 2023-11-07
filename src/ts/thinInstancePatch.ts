@@ -26,9 +26,10 @@ export class ThinInstancePatch {
                 const randomCellPositionZ = Math.random() * cellSize;
                 const positionX = this.position.x + x * cellSize - (this.size / 2) + randomCellPositionX;
                 const positionZ = this.position.z + z * cellSize - (this.size / 2) + randomCellPositionZ;
+                const scaling = 0.7 + Math.random() * 0.6;
 
                 const matrix = Matrix.Compose(
-                    new Vector3(1, 1, 1),
+                    new Vector3(scaling, scaling, scaling),
                     Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI),
                     new Vector3(positionX, 0, positionZ)
                 );
