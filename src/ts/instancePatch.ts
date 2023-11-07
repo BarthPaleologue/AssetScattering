@@ -20,16 +20,14 @@ export class InstancePatch {
     constructor(baseMeshFromLOD: Mesh[], lod: number, patchPosition: Vector3, patchSize: number, patchResolution: number) {
         this.meshFromLod = baseMeshFromLOD;
         this.instances = [];
-        InstancePatch.Scatter(baseMeshFromLOD[lod], patchPosition, patchSize, patchResolution);
         this.position = patchPosition;
         this.size = patchSize;
         this.resolution = patchResolution;
         this.lod = lod;
+        this.scatter();
     }
 
     setLOD(lod: number) {
-        return;
-
         if (lod === this.lod) return;
 
         const newInstances = [];
@@ -44,33 +42,38 @@ export class InstancePatch {
         this.lod = lod;
     }
 
-    static Scatter(baseMesh: Mesh, patchPosition: Vector3, patchSize: number, patchResolution: number) {
+    scatter() {
         const instances = [];
-        const cellSize = patchSize / patchResolution;
-        for (let x = 0; x < patchResolution; x++) {
-            for (let z = 0; z < patchResolution; z++) {
-                /*const instance = baseMesh.createInstance(`blade${x}${z}`);
-                const randomCellPositionX = Math.random() * cellSize;
-                const randomCellPositionZ = Math.random() * cellSize;
-                instance.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2 + randomCellPositionX;
-                instance.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2 + randomCellPositionZ;
-                instance.rotation.y = Math.random() * 2 * Math.PI;
-                instances.push(instance);*/
+        const nbInstances = this.resolution * this.resolution;
+        const matrixBuffer = new Float32Array(16 * nbInstances);
 
+        const matrices: Matrix[] = [];
+        const cellSize = this.size / this.resolution;
+        let index = 0;
+        for (let x = 0; x < this.resolution; x++) {
+            for (let z = 0; z < this.resolution; z++) {
                 const randomCellPositionX = Math.random() * cellSize;
                 const randomCellPositionZ = Math.random() * cellSize;
-                const positionX = patchPosition.x + x * cellSize - (patchSize / 2) + randomCellPositionX;
-                const positionZ = patchPosition.z + z * cellSize - (patchSize / 2) + randomCellPositionZ;
+                const positionX = this.position.x + x * cellSize - (this.size / 2) + randomCellPositionX;
+                const positionZ = this.position.z + z * cellSize - (this.size / 2) + randomCellPositionZ;
 
                 const matrix = Matrix.Compose(
                     new Vector3(1, 1, 1),
                     Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI),
                     new Vector3(positionX, 0, positionZ)
                 );
+                matrices.push(matrix);
+                matrix.copyToArray(matrixBuffer, 16 * index);
 
-                const idx = baseMesh.thinInstanceAdd(matrix);
-                instances.push(idx);
+                index += 1;
             }
+        }
+
+        const baseMesh = this.meshFromLod[this.lod];
+
+        const idx = baseMesh.thinInstanceAdd(matrices);
+        for(let i = 0; i < nbInstances; i++) {
+            instances.push(idx + i);
         }
 
         return instances;
