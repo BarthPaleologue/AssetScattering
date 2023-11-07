@@ -7,8 +7,7 @@ uniform vec3 lightDirection;
 in vec3 vPosition;
 
 in mat4 normalMatrix;
-in vec3 vNormal1;
-in vec3 vNormal2;
+in vec3 vNormal;
 
 float easeIn(float t, float alpha) {
     return pow(t, alpha);
@@ -22,8 +21,7 @@ void main() {
 
     float normalBlending = vPosition.x + 0.5;
 
-    vec3 normal = mix(vNormal1, vNormal2, normalBlending);
-    normal = normalize(normal);
+    vec3 normal = vNormal;
 
     vec3 normalW = normalize((normalMatrix * vec4(normal, 0.0)).xyz);
 

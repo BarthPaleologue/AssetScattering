@@ -15,8 +15,7 @@ uniform sampler2D perlinNoise;
 out vec3 vPosition;
 
 out mat4 normalMatrix;
-out vec3 vNormal1;
-out vec3 vNormal2;
+out vec3 vNormal;
 
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 vec3 rotateAround(vec3 vector, vec3 axis, float theta) {
@@ -39,11 +38,6 @@ float easeIn(float t, float alpha) {
 void main() {
     #include<instancesVertex>
 
-    // curvy normal
-    float normalCurveAmount = 0.3 * 3.14;
-    vec3 curvyNormal1 = rotateAround(normal, vec3(0.0, 1.0, 0.0), normalCurveAmount);
-    vec3 curvyNormal2 = rotateAround(normal, vec3(0.0, 1.0, 0.0), -normalCurveAmount);
-
     // wind
     vec3 objectWorld = (finalWorld * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
     float windStrength = texture2D(perlinNoise, objectWorld.xz * 0.007 + 0.1 * time).r;
@@ -58,9 +52,7 @@ void main() {
     vec3 leanAxis = rotateAround(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), windDir);
     vec3 leaningPosition = rotateAround(position, leanAxis, curveAmount);
 
-    //vec3 leaningNormal = rotateAround(normal, vec3(1.0, 0.0, 0.0), curveAmount);
-    vec3 leaningNormal1 = rotateAround(curvyNormal1, leanAxis, curveAmount);
-    vec3 leaningNormal2 = rotateAround(curvyNormal2, leanAxis, curveAmount);
+    vec3 leaningNormal = rotateAround(normal, leanAxis, curveAmount);
 
     vec3 worldPosition = (finalWorld * vec4(leaningPosition, 1.0)).xyz;
 
@@ -81,6 +73,5 @@ void main() {
 
     normalMatrix = transpose(inverse(finalWorld));
 
-    vNormal1 = leaningNormal1;
-    vNormal2 = leaningNormal2;
+    vNormal = leaningNormal;
 }
