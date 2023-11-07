@@ -26,7 +26,7 @@ export class InstanceScatterer {
                 if (radiusSquared > this.radius * this.radius) continue;
 
                 const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
-                const patch = new InstancePatch(this.meshFromLod, 0, patchPosition, patchSize, patchResolution);
+                const patch = new InstancePatch(this.meshFromLod, 1, patchPosition, patchSize, patchResolution);
 
                 this.map.set(patchPosition, patch);
             }
@@ -34,6 +34,12 @@ export class InstanceScatterer {
     }
 
     update() {
+        const matrixBuffersByLod: Float32Array[][] = [];
+        for(let lod = 0; lod < this.meshFromLod.length; lod++) {
+            matrixBuffersByLod.push([]);
+        }
+
+        const changedLODs: Set<number> = new Set();
         for (const patchPosition of this.map.keys()) {
             const patch = this.map.get(patchPosition);
             if (!patch) {
@@ -41,7 +47,30 @@ export class InstanceScatterer {
             }
 
             const newLod = this.computeLodLevel(patch);
+            if(newLod !== patch.lod) {
+                changedLODs.add(newLod);
+                changedLODs.add(patch.lod);
+            }
             patch.setLOD(newLod);
+
+            matrixBuffersByLod[patch.lod].push(patch.matrixBuffer);
+        }
+
+        for(const lod of changedLODs) {
+            console.log("Updating LOD " + lod);
+            const mesh = this.meshFromLod[lod];
+            const matrixBuffers = matrixBuffersByLod[lod];
+
+            // concatenate all the matrix buffers in one buffer
+            const totalLength = matrixBuffers.length > 0 ? matrixBuffers.length * matrixBuffers[0].length : 0;
+            const finalMatrixBuffer = new Float32Array(totalLength);
+            let offset = 0;
+            for (const matrixBuffer of matrixBuffers) {
+                finalMatrixBuffer.set(matrixBuffer, offset);
+                offset += matrixBuffer.length;
+            }
+
+            mesh.thinInstanceSetBuffer("matrix", finalMatrixBuffer, 16);
         }
     }
 }

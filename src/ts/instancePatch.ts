@@ -15,6 +15,7 @@ export class InstancePatch {
     readonly position: Vector3;
     readonly size: number;
     readonly resolution: number;
+    readonly matrixBuffer: Float32Array;
     lod: number;
 
     constructor(baseMeshFromLOD: Mesh[], lod: number, patchPosition: Vector3, patchSize: number, patchResolution: number) {
@@ -24,11 +25,14 @@ export class InstancePatch {
         this.size = patchSize;
         this.resolution = patchResolution;
         this.lod = lod;
+        this.matrixBuffer = new Float32Array(16 * this.resolution * this.resolution);
         this.scatter();
     }
 
     setLOD(lod: number) {
-        if (lod === this.lod) return;
+        this.lod = lod;
+        return;
+        /*if (lod === this.lod) return;
 
         const newInstances = [];
         for (const instance of this.instances) {
@@ -39,13 +43,12 @@ export class InstancePatch {
         }
 
         this.instances = newInstances;
-        this.lod = lod;
+        this.lod = lod;*/
     }
 
     scatter() {
-        const instances = [];
-        const nbInstances = this.resolution * this.resolution;
-        const matrixBuffer = new Float32Array(16 * nbInstances);
+        //const instances = [];
+        //const nbInstances = this.resolution * this.resolution;
 
         const matrices: Matrix[] = [];
         const cellSize = this.size / this.resolution;
@@ -63,19 +66,19 @@ export class InstancePatch {
                     new Vector3(positionX, 0, positionZ)
                 );
                 matrices.push(matrix);
-                matrix.copyToArray(matrixBuffer, 16 * index);
+                matrix.copyToArray(this.matrixBuffer, 16 * index);
 
                 index += 1;
             }
         }
 
-        const baseMesh = this.meshFromLod[this.lod];
+        /*const baseMesh = this.meshFromLod[this.lod];
 
         const idx = baseMesh.thinInstanceAdd(matrices);
         for(let i = 0; i < nbInstances; i++) {
             instances.push(idx + i);
         }
 
-        return instances;
+        return instances;*/
     }
 }
