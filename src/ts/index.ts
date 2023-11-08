@@ -30,12 +30,17 @@ import windSound from "../assets/wind.mp3";
 import "@babylonjs/core/Audio/audioSceneComponent";
 import "@babylonjs/core/Audio/audioEngine";
 import {Sound} from "@babylonjs/core/Audio/sound";
+import {EngineFactory} from "@babylonjs/core";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = new Engine(canvas, true, undefined, true);
+const engine = await EngineFactory.CreateAsync(canvas, {
+    audioEngine: true,
+    antialias: true
+});
+
 engine.displayLoadingUI();
 
 const scene = new Scene(engine);
