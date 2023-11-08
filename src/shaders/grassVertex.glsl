@@ -49,17 +49,18 @@ void main() {
 
     // curved grass blade
     float leanAmount = 0.3;
-    float curveAmount = leanAmount * position.y + windLeanAngle;
+    float curveAmount = leanAmount * position.y;
     float objectDistance = length(objectWorld - playerPosition);
-    vec3 leanAxis = rotateAround(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), windDir);
 
     // account for player presence
     vec3 playerDirection = (objectWorld - playerPosition) / objectDistance;
     float maxDistance = 3.0;
     float distance01 = objectDistance / maxDistance;
-    float influence = 1.0 + 2.0 * smoothstep(0.0, 1.0, 1.0 - distance01);
+    float influence = 1.0 + 8.0 * smoothstep(0.0, 1.0, 1.0 - distance01);
     curveAmount *= influence;
+    curveAmount += windLeanAngle * smoothstep(0.2, 1.0, distance01);
 
+    vec3 leanAxis = rotateAround(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), windDir * smoothstep(0.2, 1.0, distance01));
     leanAxis = normalize(mix(cross(vec3(0.0, 1.0, 0.0), playerDirection), leanAxis, smoothstep(0.0, 1.0, 1.0 - distance01)));
 
 
