@@ -111,6 +111,23 @@ const ground = new TerrainPatch(100, 64, 50, Vector3.Up(), scene, (x, y) => {
 const grassPatch = new ThinInstancePatch(new Vector3(0, 0, 0), 10, 5, ground.instancesMatrixBuffer);
 grassPatch.createThinInstances(highQualityGrassBlade);
 
+const cube = MeshBuilder.CreateBox("cube", {size: 1}, scene);
+cube.position.y = 0.5;
+cube.isVisible = false;
+const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
+cube.material = cubeMaterial;
+
+// take on in ten instances
+const stride = 250;
+const cubeMatrixBuffer = new Float32Array(16 * Math.floor(grassPatch.matrixBuffer.length / stride));
+let instanceIndex = 0;
+for (let i = 0; i < grassPatch.matrixBuffer.length; i += 16 * stride) {
+    cubeMatrixBuffer.set(grassPatch.matrixBuffer.subarray(i, i + 16), instanceIndex * 16);
+    instanceIndex++;
+}
+const cubePatch = new ThinInstancePatch(new Vector3(0, 0, 0), 10, 5, cubeMatrixBuffer);
+cubePatch.createThinInstances(cube);
+
 const ui = new UI(scene);
 
 document.addEventListener("keypress", (e) => {
@@ -130,8 +147,9 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    /*ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassPatch.getNbThinInstances().toLocaleString()} grass blades\n${cubePatch.getNbThinInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
 
+    /*ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
     grassScatterer.update(character.position);*/
 }
 

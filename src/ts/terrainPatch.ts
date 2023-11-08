@@ -82,8 +82,9 @@ function scatterInTriangle(n: number, instanceIndex: number, instancesMatrixBuff
     for (let i = 0; i < n; i++) {
         const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
         const alignQuaternion = getTransformationQuaternion(Vector3.Up(), instanceUp ? instanceUp : new Vector3(nx, ny, nz));
+        const scaling = 0.9 + Math.random() * 0.2;
         const matrix = Matrix.Compose(
-            new Vector3(1, 1, 1),
+            new Vector3(scaling, scaling, scaling),
             alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI)),
             new Vector3(x, y, z)
         );
