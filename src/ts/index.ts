@@ -32,6 +32,8 @@ import "@babylonjs/core/Audio/audioEngine";
 import {Sound} from "@babylonjs/core/Audio/sound";
 import {EngineFactory} from "@babylonjs/core";
 
+import "@babylonjs/core/Physics/physicsEngineComponent";
+
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
