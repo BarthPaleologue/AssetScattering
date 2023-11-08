@@ -33,6 +33,7 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {EngineFactory} from "@babylonjs/core";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
+import {TerrainPatch} from "./terrainPatch";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -99,15 +100,7 @@ bladeMeshFromLod[1] = highQualityGrassBlade;
     return distance < patchSize * 3 ? 1 : 0;
 });*/
 
-const ground = MeshBuilder.CreateGround("ground", {
-    width: patchSize * (fieldRadius + 1) * 2,
-    height: patchSize * (fieldRadius + 1) * 2
-}, scene);
-
-const groundMaterial = new StandardMaterial("groundMaterial", scene);
-groundMaterial.diffuseColor.set(0.4, 0.3, 0.3);
-groundMaterial.specularColor.set(0, 0, 0);
-ground.material = groundMaterial;
+const ground = new TerrainPatch(10, 5, scene);
 
 const ui = new UI(scene);
 
