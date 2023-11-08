@@ -4,15 +4,18 @@ import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Loading/loadingScreen";
 
+import {ActionManager, ExecuteCodeAction} from "@babylonjs/core/Actions";
+
 import "../styles/index.scss";
 import {createGrassBlade} from "./grassBlade";
-import {ArcRotateCamera, DirectionalLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
+import {ArcRotateCamera, DirectionalLight, HemisphericLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
 import {createGrassMaterial} from "./grassMaterial";
 
 import perlinNoise from "../assets/perlin.png";
 import {ThinInstanceScatterer} from "./thinInstanceScatterer";
 import {createSkybox} from "./skybox";
 import {UI} from "./ui";
+import {createCharacterController} from "./character";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -22,6 +25,16 @@ const engine = new Engine(canvas);
 engine.displayLoadingUI();
 
 const scene = new Scene(engine);
+scene.useRightHandedSystem = true;
+
+const inputMap: Map<string, boolean> = new Map<string, boolean>();
+scene.actionManager = new ActionManager(scene);
+scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (e) => {
+    inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+}));
+scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
+    inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+}));
 
 const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
 camera.lowerRadiusLimit = 3;
@@ -29,7 +42,10 @@ camera.upperBetaLimit = 3.14 / 2 - 0.1;
 camera.minZ = 0.1;
 camera.attachControl();
 
+createCharacterController(scene, camera, inputMap);
+
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
+new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
 
 createSkybox(scene, light.direction.scale(-1));
 
@@ -66,16 +82,28 @@ const ui = new UI(scene);
 
 let clock = 0;
 
+const playerBox = MeshBuilder.CreateBox("playerBox", {size: 1.0}, scene);
+playerBox.position.set(0, 0.5, 0);
+
+camera.setTarget(playerBox);
+
 function updateScene() {
     const deltaTime = engine.getDeltaTime() / 1000;
     clock += deltaTime;
 
+    playerBox.position.addInPlace(new Vector3(
+        Math.sin(clock) * deltaTime,
+        0,
+        Math.cos(clock) * deltaTime
+    ));
+
+    material.setVector3("playerPosition", playerBox.position);
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
     ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades | ${engine.getFps().toFixed(0)} FPS`);
 
-    grassScatterer.update();
+    grassScatterer.update(playerBox.position);
 }
 
 scene.executeWhenReady(() => {

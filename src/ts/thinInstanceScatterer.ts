@@ -30,7 +30,7 @@ export class ThinInstanceScatterer {
         this.updateMatrices();
     }
 
-    update() {
+    update(playerPosition: Vector3) {
         // do nothing for now
     }
 

@@ -11,6 +11,9 @@ devDependencies:
   '@babylonjs/gui':
     specifier: ^6.28.1
     version: 6.28.1(@babylonjs/core@6.28.1)
+  '@babylonjs/loaders':
+    specifier: ^6.28.1
+    version: 6.28.1(@babylonjs/core@6.28.1)(babylonjs-gltf2interface@6.28.1)
   '@babylonjs/materials':
     specifier: ^6.28.1
     version: 6.28.1(@babylonjs/core@6.28.1)
@@ -124,6 +127,16 @@ packages:
       '@babylonjs/core': ^6.0.0
     dependencies:
       '@babylonjs/core': 6.28.1
+    dev: true
+
+  /@babylonjs/loaders@6.28.1(@babylonjs/core@6.28.1)(babylonjs-gltf2interface@6.28.1):
+    resolution: {integrity: sha512-MrvkQxNaWotVE1xnKHCW/mij80efBH4sCM1xybEw2abAxr0jGfdSpPAKnddsqRE3JsAqyp40QaeHd5ngSKIaQg==}
+    peerDependencies:
+      '@babylonjs/core': ^6.0.0
+      babylonjs-gltf2interface: ^6.0.0
+    dependencies:
+      '@babylonjs/core': 6.28.1
+      babylonjs-gltf2interface: 6.28.1
     dev: true
 
   /@babylonjs/materials@6.28.1(@babylonjs/core@6.28.1):
@@ -1490,6 +1503,10 @@ packages:
   /available-typed-arrays@1.0.5:
     resolution: {integrity: sha512-DMD0KiN46eipeziST1LPP/STfDU0sufISXmjSgvVsoU2tqxctQeASejWcfNtxYKqETM1UxQ8sp2OrSBWpHY6sw==}
     engines: {node: '>= 0.4'}
+    dev: true
+
+  /babylonjs-gltf2interface@6.28.1:
+    resolution: {integrity: sha512-rBOS/Vl2xpsHx93m2mGJOOqi1ofLgVGNFp5C56byrUqqlDz+GdmuLtROrHTDMZaEkHsCv8GWW72o3qFTBjSJOQ==}
     dev: true
 
   /balanced-match@1.0.2:

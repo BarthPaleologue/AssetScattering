@@ -12,7 +12,7 @@ export class UI {
         const container = new Rectangle("container");
         container.width = "370px";
         container.height = "100px";
-        container.cornerRadius = 20;
+        container.cornerRadius = 5;
         container.background = "rgba(0, 0, 0, 0.7)";
         container.horizontalAlignment = 0;
         container.verticalAlignment = 1;

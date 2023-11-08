@@ -7,6 +7,7 @@ uniform mat4 view;
 uniform mat4 projection;
 
 uniform vec3 cameraPosition;
+uniform vec3 playerPosition;
 
 uniform float time;
 
@@ -49,6 +50,10 @@ void main() {
     // curved grass blade
     float leanAmount = 0.3;
     float curveAmount = leanAmount * position.y + windLeanAngle;
+    float objectDistance = length(objectWorld - playerPosition);
+    if(length(objectWorld - playerPosition) < 2.0) {
+        curveAmount = 10.0;
+    }
     vec3 leanAxis = rotateAround(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), windDir);
     vec3 leaningPosition = rotateAround(position, leanAxis, curveAmount);
 

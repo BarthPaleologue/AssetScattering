@@ -12,7 +12,7 @@ export function createGrassMaterial(scene: Scene) {
 
     const grassMaterial = new ShaderMaterial("grassMaterial", scene, shaderName, {
         attributes: ["position", "normal"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "viewProjection", "time", "lightDirection", "cameraPosition"],
+        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "viewProjection", "time", "lightDirection", "cameraPosition", "playerPosition"],
         defines: ["#define INSTANCES"],
         samplers: ["perlinNoise"]
     });
