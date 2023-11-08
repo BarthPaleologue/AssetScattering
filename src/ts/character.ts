@@ -46,7 +46,7 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
 
         let keydown = false;
         //Manage the movements of the character (e.g. position, direction)
-        if (inputMap.get("z")) {
+        if (inputMap.get("z") || inputMap.get("w")) {
             hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeed));
             keydown = true;
         }
@@ -54,7 +54,7 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
             hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeedBackwards));
             keydown = true;
         }
-        if (inputMap.get("q")) {
+        if (inputMap.get("q") || inputMap.get("a")) {
             hero.rotate(Vector3.Up(), heroRotationSpeed);
             keydown = true;
         }
