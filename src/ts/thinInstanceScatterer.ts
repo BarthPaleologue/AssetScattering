@@ -3,17 +3,23 @@ import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {ThinInstancePatch} from "./thinInstancePatch";
 
 export class ThinInstanceScatterer {
-    readonly baseMesh: Mesh;
-    readonly map = new Map<Vector3, ThinInstancePatch>();
+    readonly meshesFromLod: Mesh[];
+    readonly map = new Map<Vector3, [ThinInstancePatch, number]>();
     readonly patchSize: number;
     readonly patchResolution: number;
     readonly radius: number;
 
-    constructor(baseMesh: Mesh, radius: number, patchSize: number, patchResolution: number) {
-        this.baseMesh = baseMesh;
+    private lodUpdateCadence = 1;
+
+    private readonly computeLodLevel: (patch: ThinInstancePatch) => number
+    private readonly updateQueue: Array<{ newLOD: number, patch: ThinInstancePatch }> = [];
+
+    constructor(meshesFromLod: Mesh[], radius: number, patchSize: number, patchResolution: number, computeLodLevel = (patch: ThinInstancePatch) => 0) {
+        this.meshesFromLod = meshesFromLod;
         this.patchSize = patchSize;
         this.patchResolution = patchResolution;
         this.radius = radius;
+        this.computeLodLevel = computeLodLevel;
 
         for (let x = -this.radius; x <= this.radius; x++) {
             for (let z = -this.radius; z <= this.radius; z++) {
@@ -22,21 +28,43 @@ export class ThinInstanceScatterer {
 
                 const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
                 const patch = new ThinInstancePatch(patchPosition, patchSize, patchResolution);
+                const patchLod = this.computeLodLevel(patch);
 
-                this.map.set(patchPosition, patch);
+                this.map.set(patchPosition, [patch, patchLod]);
 
-                patch.createThinInstances(this.baseMesh);
+                patch.createThinInstances(this.meshesFromLod[patchLod]);
             }
         }
     }
 
-    update(playerPosition: Vector3) {
-        // do nothing for now
+    public update(playerPosition: Vector3) {
+        if(this.meshesFromLod.length > 1) this.updateLOD();
     }
 
-    getNbThinInstances() {
+    private updateLOD() {
+        // update LOD
+        for(const [patch, patchLod] of this.map.values()) {
+            const newLod = this.computeLodLevel(patch);
+            if(newLod === patchLod) continue;
+            this.updateQueue.push({newLOD: newLod, patch: patch});
+            this.map.set(patch.position, [patch, newLod]);
+        }
+
+        // update queue
+        for(let i = 0; i < this.lodUpdateCadence; i++) {
+            const head = this.updateQueue.shift();
+            if(head === undefined) break;
+            head.patch.createThinInstances(this.meshesFromLod[head.newLOD]);
+        }
+    }
+
+    public setLodUpdateCadence(cadence: number) {
+        this.lodUpdateCadence = cadence;
+    }
+
+    public getNbThinInstances() {
         let count = 0;
-        for (const patch of this.map.values()) {
+        for (const [patch] of this.map.values()) {
             count += patch.getNbThinInstances();
         }
         return count;

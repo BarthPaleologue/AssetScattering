@@ -19,6 +19,8 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
 
     camera.lockedTarget = cameraAttachPoint;
     camera.wheelPrecision = 30;
+    camera.lowerRadiusLimit = 3;
+    camera.upperBetaLimit = 3.14 / 2 - 0.1;
 
     //Scale the model down
     //Hero character variables

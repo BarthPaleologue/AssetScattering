@@ -17,6 +17,7 @@ import {createSkybox} from "./skybox";
 import {UI} from "./ui";
 import {createCharacterController} from "./character";
 import {ThinInstancePatch} from "./thinInstancePatch";
+import {Mesh} from "@babylonjs/core/Meshes/mesh";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -38,8 +39,6 @@ scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyUpTr
 }));
 
 const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
-camera.lowerRadiusLimit = 3;
-camera.upperBetaLimit = 3.14 / 2 - 0.1;
 camera.minZ = 0.1;
 camera.attachControl();
 
@@ -54,21 +53,27 @@ const perlinTexture = new Texture(perlinNoise, scene);
 
 const highQualityGrassBlade = createGrassBlade(scene, 4);
 highQualityGrassBlade.isVisible = false;
+const lowQualityGrassBlade = createGrassBlade(scene, 1);
+lowQualityGrassBlade.isVisible = false;
 
 const material = createGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
 material.setTexture("perlinNoise", perlinTexture);
 highQualityGrassBlade.material = material;
+lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = patchSize * 5;
-const fieldRadius = 11;
+const fieldRadius = 12;
 
-/*const bladeMeshFromLod = new Array<Mesh>(2);
+const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
-bladeMeshFromLod[1] = highQualityGrassBlade;*/
+bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new ThinInstanceScatterer(highQualityGrassBlade, fieldRadius, patchSize, patchResolution);
+const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
+    const distance = Vector3.Distance(patch.position, camera.position);
+    return distance < patchSize * 2 ? 1 : 0;
+});
 
 const ground = MeshBuilder.CreateGround("ground", {
     width: patchSize * (fieldRadius + 1) * 2,
