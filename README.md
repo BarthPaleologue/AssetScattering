@@ -1,6 +1,7 @@
 # Asset Scattering
 
 [![NodeJS with Webpack](https://github.com/BarthPaleologue/babylonjs-template/actions/workflows/webpack.yml/badge.svg)](https://github.com/BarthPaleologue/babylonjs-template/actions/workflows/webpack.yml)
+[![Build & Deploy site to Pages](https://github.com/BarthPaleologue/AssetScattering/actions/workflows/deploy.yml/badge.svg)](https://github.com/BarthPaleologue/AssetScattering/actions/workflows/deploy.yml)
 
 ![Screenshot](./cover.png)
 
