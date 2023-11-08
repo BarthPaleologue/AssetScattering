@@ -1,23 +1,22 @@
 import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
-import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
+import {Mesh} from "@babylonjs/core/Meshes/mesh";
 
 export class ThinInstancePatch {
-    instances: InstancedMesh[];
+    private baseMesh: Mesh | null = null;
     readonly position: Vector3;
     readonly size: number;
     readonly resolution: number;
     readonly matrixBuffer: Float32Array;
 
     constructor(patchPosition: Vector3, patchSize: number, patchResolution: number) {
-        this.instances = [];
         this.position = patchPosition;
         this.size = patchSize;
         this.resolution = patchResolution;
         this.matrixBuffer = new Float32Array(16 * this.resolution * this.resolution);
-        this.createMatrixBuffer();
+        this.populateMatrixBuffer();
     }
 
-    private createMatrixBuffer() {
+    public populateMatrixBuffer() {
         const cellSize = this.size / this.resolution;
         let index = 0;
         for (let x = 0; x < this.resolution; x++) {
@@ -38,5 +37,23 @@ export class ThinInstancePatch {
                 index += 1;
             }
         }
+    }
+
+    public clearThinInstances() {
+        if(this.baseMesh === null) return;
+        this.baseMesh.thinInstanceCount = 0;
+    }
+
+    public createThinInstances(baseMesh: Mesh) {
+        this.clearThinInstances();
+        this.baseMesh = baseMesh.clone();
+        this.baseMesh.makeGeometryUnique();
+        this.baseMesh.isVisible = true;
+        this.baseMesh.thinInstanceSetBuffer("matrix", this.matrixBuffer, 16);
+    }
+
+    public getNbThinInstances() {
+        if(this.baseMesh === null) return 0;
+        return this.baseMesh.thinInstanceCount;
     }
 }

@@ -16,6 +16,7 @@ import {ThinInstanceScatterer} from "./thinInstanceScatterer";
 import {createSkybox} from "./skybox";
 import {UI} from "./ui";
 import {createCharacterController} from "./character";
+import {ThinInstancePatch} from "./thinInstancePatch";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -52,6 +53,7 @@ createSkybox(scene, light.direction.scale(-1));
 const perlinTexture = new Texture(perlinNoise, scene);
 
 const highQualityGrassBlade = createGrassBlade(scene, 4);
+highQualityGrassBlade.isVisible = false;
 
 const material = createGrassMaterial(scene);
 material.setVector3("lightDirection", light.direction);
@@ -59,8 +61,8 @@ material.setTexture("perlinNoise", perlinTexture);
 highQualityGrassBlade.material = material;
 
 const patchSize = 10;
-const patchResolution = 50;
-const fieldRadius = 9;
+const patchResolution = patchSize * 5;
+const fieldRadius = 11;
 
 /*const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;

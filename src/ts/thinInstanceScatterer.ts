@@ -24,10 +24,10 @@ export class ThinInstanceScatterer {
                 const patch = new ThinInstancePatch(patchPosition, patchSize, patchResolution);
 
                 this.map.set(patchPosition, patch);
+
+                patch.createThinInstances(this.baseMesh);
             }
         }
-
-        this.updateMatrices();
     }
 
     update(playerPosition: Vector3) {
@@ -35,25 +35,10 @@ export class ThinInstanceScatterer {
     }
 
     getNbThinInstances() {
-        return this.map.size * this.patchResolution * this.patchResolution;
-    }
-
-    private updateMatrices() {
-        const nbPatches = this.map.size;
-        const totalLength = nbPatches > 0 ? nbPatches * 16 * this.patchResolution * this.patchResolution : 0;
-        const finalMatrixBuffer = new Float32Array(totalLength);
-
-        console.log(`Updated ${this.getNbThinInstances()} thin instance matrices`);
-
-        // concatenate all the matrix buffers in one buffer
-        let offset = 0;
+        let count = 0;
         for (const patch of this.map.values()) {
-            const matrixBuffer = patch.matrixBuffer;
-
-            finalMatrixBuffer.set(matrixBuffer, offset);
-            offset += matrixBuffer.length;
+            count += patch.getNbThinInstances();
         }
-
-        this.baseMesh.thinInstanceSetBuffer("matrix", finalMatrixBuffer, 16);
+        return count;
     }
 }
