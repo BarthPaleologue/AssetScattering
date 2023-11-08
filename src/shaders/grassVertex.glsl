@@ -45,16 +45,24 @@ void main() {
     float windDir = texture2D(perlinNoise, objectWorld.xz * 0.005 + 0.05 * time).r * 2.0 * 3.14;
 
     float windLeanAngle = remap(windStrength, 0.0, 1.0, 0.25, 1.0);
-    windLeanAngle = easeIn(windLeanAngle, 2.0) * 1.25;
+    windLeanAngle = easeIn(windLeanAngle, 2.0) * 0.75;
 
     // curved grass blade
     float leanAmount = 0.3;
     float curveAmount = leanAmount * position.y + windLeanAngle;
     float objectDistance = length(objectWorld - playerPosition);
-    if(length(objectWorld - playerPosition) < 2.0) {
-        curveAmount = 10.0;
-    }
     vec3 leanAxis = rotateAround(vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), windDir);
+
+    // account for player presence
+    vec3 playerDirection = (objectWorld - playerPosition) / objectDistance;
+    float maxDistance = 3.0;
+    float distance01 = objectDistance / maxDistance;
+    float influence = 1.0 + 2.0 * smoothstep(0.0, 1.0, 1.0 - distance01);
+    curveAmount *= influence;
+
+    leanAxis = normalize(mix(cross(vec3(0.0, 1.0, 0.0), playerDirection), leanAxis, smoothstep(0.0, 1.0, 1.0 - distance01)));
+
+
     vec3 leaningPosition = rotateAround(position, leanAxis, curveAmount);
 
     vec3 leaningNormal = rotateAround(normal, leanAxis, curveAmount);
