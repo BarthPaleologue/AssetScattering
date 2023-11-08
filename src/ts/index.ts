@@ -94,10 +94,10 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
+/*const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
     const distance = Vector3.Distance(patch.position, camera.position);
     return distance < patchSize * 3 ? 1 : 0;
-});
+});*/
 
 const ground = MeshBuilder.CreateGround("ground", {
     width: patchSize * (fieldRadius + 1) * 2,
@@ -128,9 +128,9 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    /*ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 
-    grassScatterer.update(character.position);
+    grassScatterer.update(character.position);*/
 }
 
 scene.executeWhenReady(() => {
