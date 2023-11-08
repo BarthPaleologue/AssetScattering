@@ -42,7 +42,7 @@ camera.upperBetaLimit = 3.14 / 2 - 0.1;
 camera.minZ = 0.1;
 camera.attachControl();
 
-createCharacterController(scene, camera, inputMap);
+const character = await createCharacterController(scene, camera, inputMap);
 
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
@@ -82,28 +82,17 @@ const ui = new UI(scene);
 
 let clock = 0;
 
-const playerBox = MeshBuilder.CreateBox("playerBox", {size: 1.0}, scene);
-playerBox.position.set(0, 0.5, 0);
-
-camera.setTarget(playerBox);
-
 function updateScene() {
     const deltaTime = engine.getDeltaTime() / 1000;
     clock += deltaTime;
 
-    playerBox.position.addInPlace(new Vector3(
-        Math.sin(clock) * deltaTime,
-        0,
-        Math.cos(clock) * deltaTime
-    ));
-
-    material.setVector3("playerPosition", playerBox.position);
+    material.setVector3("playerPosition", character.position);
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
     ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades | ${engine.getFps().toFixed(0)} FPS`);
 
-    grassScatterer.update(playerBox.position);
+    grassScatterer.update(character.position);
 }
 
 scene.executeWhenReady(() => {
