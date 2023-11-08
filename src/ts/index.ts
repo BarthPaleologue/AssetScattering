@@ -100,7 +100,7 @@ bladeMeshFromLod[1] = highQualityGrassBlade;
     return distance < patchSize * 3 ? 1 : 0;
 });*/
 
-const ground = new TerrainPatch(100, 64, 50, false, scene, (x, y) => {
+const ground = new TerrainPatch(100, 64, 50, Vector3.Up(), scene, (x, y) => {
     const height = Math.cos(x * 0.1) * Math.sin(y * 0.1) * 3
     const nx = -Math.cos(x * 0.1) * Math.sin(y * 0.1);
     const ny = Math.sin(x * 0.1) * Math.cos(y * 0.1);
