@@ -100,7 +100,10 @@ bladeMeshFromLod[1] = highQualityGrassBlade;
     return distance < patchSize * 3 ? 1 : 0;
 });*/
 
-const ground = new TerrainPatch(10, 5, scene);
+const ground = new TerrainPatch(100, 64, 50, scene);
+
+const grassPatch = new ThinInstancePatch(new Vector3(0, 0, 0), 10, 5, ground.instancesMatrixBuffer);
+grassPatch.createThinInstances(highQualityGrassBlade);
 
 const ui = new UI(scene);
 

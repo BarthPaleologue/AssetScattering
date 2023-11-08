@@ -10,12 +10,12 @@ export class ThinInstancePatch {
     readonly resolution: number;
     readonly matrixBuffer: Float32Array;
 
-    constructor(patchPosition: Vector3, patchSize: number, patchResolution: number) {
+    constructor(patchPosition: Vector3, patchSize: number, patchResolution: number, matrixBuffer: Float32Array | null = null) {
         this.position = patchPosition;
         this.size = patchSize;
         this.resolution = patchResolution;
-        this.matrixBuffer = new Float32Array(16 * this.resolution * this.resolution);
-        this.populateMatrixBuffer();
+        this.matrixBuffer = matrixBuffer === null ? new Float32Array(16 * this.resolution * this.resolution) : matrixBuffer;
+        if(matrixBuffer === null) this.populateMatrixBuffer();
     }
 
     public populateMatrixBuffer() {
