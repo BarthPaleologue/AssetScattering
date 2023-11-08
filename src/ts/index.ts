@@ -64,7 +64,7 @@ lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = patchSize * 5;
-const fieldRadius = 12;
+const fieldRadius = 18;
 
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
