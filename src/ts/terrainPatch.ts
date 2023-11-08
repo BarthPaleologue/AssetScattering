@@ -21,35 +21,78 @@ function triangleArea(x1: number, y1: number, z1: number, x2: number, y2: number
     return Math.sqrt(nx * nx + ny * ny + nz * nz) / 2;
 }
 
-function triangleAreaFromBuffer(buffer: Float32Array, index1: number, index2: number, index3: number) {
+function triangleAreaFromBuffer(positions: Float32Array, index1: number, index2: number, index3: number) {
     return triangleArea(
-        buffer[3 * index1 + 0], buffer[3 * index1 + 1], buffer[3 * index1 + 2],
-        buffer[3 * index2 + 0], buffer[3 * index2 + 1], buffer[3 * index2 + 2],
-        buffer[3 * index3 + 0], buffer[3 * index3 + 1], buffer[3 * index3 + 2]
+        positions[3 * index1 + 0], positions[3 * index1 + 1], positions[3 * index1 + 2],
+        positions[3 * index2 + 0], positions[3 * index2 + 1], positions[3 * index2 + 2],
+        positions[3 * index3 + 0], positions[3 * index3 + 1], positions[3 * index3 + 2]
     );
 }
 
-function randomPointInTriangleFromBuffer(buffer: Float32Array, index1: number, index2: number, index3: number) {
+function randomPointInTriangleFromBuffer(positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number) {
     const r1 = Math.random();
     const r2 = Math.random();
 
-    const x1 = buffer[3 * index1 + 0];
-    const y1 = buffer[3 * index1 + 1];
-    const z1 = buffer[3 * index1 + 2];
+    const x1 = positions[3 * index1 + 0];
+    const y1 = positions[3 * index1 + 1];
+    const z1 = positions[3 * index1 + 2];
 
-    const x2 = buffer[3 * index2 + 0];
-    const y2 = buffer[3 * index2 + 1];
-    const z2 = buffer[3 * index2 + 2];
+    const x2 = positions[3 * index2 + 0];
+    const y2 = positions[3 * index2 + 1];
+    const z2 = positions[3 * index2 + 2];
 
-    const x3 = buffer[3 * index3 + 0];
-    const y3 = buffer[3 * index3 + 1];
-    const z3 = buffer[3 * index3 + 2];
+    const x3 = positions[3 * index3 + 0];
+    const y3 = positions[3 * index3 + 1];
+    const z3 = positions[3 * index3 + 2];
 
-    const x = (1 - Math.sqrt(r1)) * x1 + Math.sqrt(r1) * (1 - r2) * x2 + Math.sqrt(r1) * r2 * x3;
-    const y = (1 - Math.sqrt(r1)) * y1 + Math.sqrt(r1) * (1 - r2) * y2 + Math.sqrt(r1) * r2 * y3;
-    const z = (1 - Math.sqrt(r1)) * z1 + Math.sqrt(r1) * (1 - r2) * z2 + Math.sqrt(r1) * r2 * z3;
+    const n1x = normals[3 * index1 + 0];
+    const n1y = normals[3 * index1 + 1];
+    const n1z = normals[3 * index1 + 2];
 
-    return [x, y, z];
+    const n2x = normals[3 * index2 + 0];
+    const n2y = normals[3 * index2 + 1];
+    const n2z = normals[3 * index2 + 2];
+
+    const n3x = normals[3 * index3 + 0];
+    const n3y = normals[3 * index3 + 1];
+    const n3z = normals[3 * index3 + 2];
+
+    const f1 = (1 - Math.sqrt(r1));
+    const f2 = Math.sqrt(r1) * (1 - r2);
+    const f3 = Math.sqrt(r1) * r2;
+
+    const x = f1 * x1 + f2 * x2 + f3 * x3;
+    const y = f1 * y1 + f2 * y2 + f3 * y3;
+    const z = f1 * z1 + f2 * z2 + f3 * z3;
+
+    const nx = f1 * n1x + f2 * n2x + f3 * n3x;
+    const ny = f1 * n1y + f2 * n2y + f3 * n3y;
+    const nz = f1 * n1z + f2 * n2z + f3 * n3z;
+
+    return [x, y, z, nx, ny, nz];
+}
+
+function getTransformationQuaternion(from: Vector3, to: Vector3): Quaternion {
+    const rotationAxis = Vector3.Cross(from, to);
+    const angle = Math.acos(Vector3.Dot(from, to));
+    return Quaternion.RotationAxis(rotationAxis, angle);
+}
+
+function scatterInTriangle(n: number, instanceIndex: number, instancesMatrixBuffer: Float32Array, positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number, alignInstancesWithNormal: boolean) {
+    for (let i = 0; i < n; i++) {
+        const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
+        const alignQuaternion = alignInstancesWithNormal ? getTransformationQuaternion(Vector3.Up(), new Vector3(nx, ny, nz)) : Quaternion.Identity();
+        const matrix = Matrix.Compose(
+            new Vector3(1, 1, 1),
+            alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI)),
+            new Vector3(x, y, z)
+        );
+
+        matrix.copyToArray(instancesMatrixBuffer, 16 * instanceIndex);
+        instanceIndex++;
+    }
+
+    return instanceIndex;
 }
 
 export class TerrainPatch {
@@ -58,10 +101,10 @@ export class TerrainPatch {
     readonly material: StandardMaterial;
     readonly instancesMatrixBuffer: Float32Array;
 
-    constructor(size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, scene: Scene) {
+    constructor(size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, alignInstancesWithNormal: boolean, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, normalX: number, normalY: number, normalZ: number] = () => [0, 0, 1, 0]) {
         this.mesh = new Mesh("terrainPatch", scene);
         this.material = new StandardMaterial("terrainPatchMaterial", scene);
-        this.material.diffuseColor.set(0.05, 0.2, 0.05);
+        this.material.diffuseColor.set(0.02, 0.1, 0.01);
         this.material.specularColor.scaleInPlace(0);
         this.material.wireframe = false;
         this.mesh.material = this.material;
@@ -83,13 +126,18 @@ export class TerrainPatch {
         for (let x = 0; x < this.nbVerticesPerRow; x++) {
             for (let y = 0; y < this.nbVerticesPerRow; y++) {
                 const index = x * this.nbVerticesPerRow + y;
-                positions[3 * index + 0] = x * stepSize - size / 2;
-                positions[3 * index + 1] = Math.cos(x * stepSize * 0.1) * Math.sin(y * stepSize * 0.1) * 3;
-                positions[3 * index + 2] = y * stepSize - size / 2;
+                const positionX = x * stepSize - size / 2;
+                const positionY = y * stepSize - size / 2;
 
-                normals[3 * index + 0] = 0;
-                normals[3 * index + 1] = 1;
-                normals[3 * index + 2] = 0;
+                const [height, normalX, normalY, normalZ] = terrainFunction(positionX, positionY);
+
+                positions[3 * index + 0] = positionX;
+                positions[3 * index + 1] = height;
+                positions[3 * index + 2] = positionY;
+
+                normals[3 * index + 0] = normalX;
+                normals[3 * index + 1] = normalY;
+                normals[3 * index + 2] = normalZ;
 
                 if (x == 0 || y == 0) continue;
 
@@ -99,19 +147,9 @@ export class TerrainPatch {
 
                 const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
                 const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter);
-                for (let i = 0; i < nbInstances1; i++) {
-                    if(instanceIndex >= maxNbInstances) {
-                        throw new Error("Too many instances");
-                    }
-                    const [x, y, z] = randomPointInTriangleFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
-                    const matrix = Matrix.Compose(
-                        new Vector3(1, 1, 1),
-                        Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI),
-                        new Vector3(x, y, z)
-                    );
-
-                    matrix.copyToArray(this.instancesMatrixBuffer, 16 * instanceIndex);
-                    instanceIndex++;
+                instanceIndex = scatterInTriangle(nbInstances1, instanceIndex, this.instancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1, alignInstancesWithNormal);
+                if(instanceIndex >= maxNbInstances) {
+                    throw new Error("Too many instances");
                 }
 
                 indices[indexIndex++] = index;
@@ -120,19 +158,9 @@ export class TerrainPatch {
 
                 const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
                 const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter);
-                for (let i = 0; i < nbInstances2; i++) {
-                    if(instanceIndex >= maxNbInstances) {
-                        throw new Error("Too many instances");
-                    }
-                    const [x, y, z] = randomPointInTriangleFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
-                    const matrix = Matrix.Compose(
-                        new Vector3(1, 1, 1),
-                        Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI),
-                        new Vector3(x, y, z)
-                    );
-
-                    matrix.copyToArray(this.instancesMatrixBuffer, 16 * instanceIndex);
-                    instanceIndex++;
+                instanceIndex = scatterInTriangle(nbInstances2, instanceIndex, this.instancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1, alignInstancesWithNormal);
+                if(instanceIndex >= maxNbInstances) {
+                    throw new Error("Too many instances");
                 }
             }
         }
