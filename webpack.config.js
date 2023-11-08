@@ -23,7 +23,7 @@ const config = {
 
     plugins: [
         new HtmlWebpackPlugin({
-            title: "Hello BabylonJS !",
+            title: "Asset Scattering",
             filename: "index.html",
             template: path.join(htmlPath, "index.html"),
             chunks: ["index"]
