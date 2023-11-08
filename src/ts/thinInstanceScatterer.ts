@@ -3,11 +3,12 @@ import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {ThinInstancePatch} from "./thinInstancePatch";
 
 export class ThinInstanceScatterer {
-    readonly meshesFromLod: Mesh[];
-    readonly map = new Map<Vector3, [ThinInstancePatch, number]>();
-    readonly patchSize: number;
-    readonly patchResolution: number;
-    readonly radius: number;
+    private readonly meshesFromLod: Mesh[];
+    private readonly nbVertexFromLod: number[];
+    private readonly map = new Map<Vector3, [ThinInstancePatch, number]>();
+    private readonly patchSize: number;
+    private readonly patchResolution: number;
+    private readonly radius: number;
 
     private lodUpdateCadence = 1;
 
@@ -16,6 +17,7 @@ export class ThinInstanceScatterer {
 
     constructor(meshesFromLod: Mesh[], radius: number, patchSize: number, patchResolution: number, computeLodLevel = (patch: ThinInstancePatch) => 0) {
         this.meshesFromLod = meshesFromLod;
+        this.nbVertexFromLod = this.meshesFromLod.map((mesh) => mesh.getTotalVertices());
         this.patchSize = patchSize;
         this.patchResolution = patchResolution;
         this.radius = radius;
@@ -26,8 +28,8 @@ export class ThinInstanceScatterer {
                 const radiusSquared = x * x + z * z;
                 if (radiusSquared >= this.radius * this.radius) continue;
 
-                const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
-                const patch = new ThinInstancePatch(patchPosition, patchSize, patchResolution);
+                const patchPosition = new Vector3(x * this.patchSize, 0, z * this.patchSize);
+                const patch = new ThinInstancePatch(patchPosition, this.patchSize, this.patchResolution);
                 const patchLod = this.computeLodLevel(patch);
 
                 this.map.set(patchPosition, [patch, patchLod]);
@@ -66,6 +68,14 @@ export class ThinInstanceScatterer {
         let count = 0;
         for (const [patch] of this.map.values()) {
             count += patch.getNbThinInstances();
+        }
+        return count;
+    }
+
+    public getNbVertices() {
+        let count = 0;
+        for (const [patch, patchLod] of this.map.values()) {
+            count += this.nbVertexFromLod[patchLod] * patch.getNbThinInstances();
         }
         return count;
     }

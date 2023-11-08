@@ -6,9 +6,14 @@ import "@babylonjs/core/Loading/loadingScreen";
 
 import {ActionManager, ExecuteCodeAction} from "@babylonjs/core/Actions";
 
+import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
+import {Tools} from "@babylonjs/core/Misc/tools";
+import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
+import {DirectionalLight} from "@babylonjs/core/Lights/directionalLight";
+import {HemisphericLight} from "@babylonjs/core/Lights/hemisphericLight";
+
 import "../styles/index.scss";
 import {createGrassBlade} from "./grassBlade";
-import {ArcRotateCamera, DirectionalLight, HemisphericLight, MeshBuilder, StandardMaterial} from "@babylonjs/core";
 import {createGrassMaterial} from "./grassMaterial";
 
 import perlinNoise from "../assets/perlin.png";
@@ -18,12 +23,19 @@ import {UI} from "./ui";
 import {createCharacterController} from "./character";
 import {ThinInstancePatch} from "./thinInstancePatch";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
+import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
+
+import windSound from "../assets/wind.mp3";
+
+import "@babylonjs/core/Audio/audioSceneComponent";
+import "@babylonjs/core/Audio/audioEngine";
+import {Sound} from "@babylonjs/core/Audio/sound";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = new Engine(canvas);
+const engine = new Engine(canvas, true, undefined, true);
 engine.displayLoadingUI();
 
 const scene = new Scene(engine);
@@ -37,6 +49,11 @@ scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyDown
 scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
     inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
 }));
+
+new Sound("wind", windSound, scene, null, {
+    loop: true,
+    autoplay: true
+})
 
 const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
 camera.minZ = 0.1;
@@ -64,7 +81,7 @@ lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = patchSize * 5;
-const fieldRadius = 18;
+const fieldRadius = 17;
 
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
@@ -72,7 +89,7 @@ bladeMeshFromLod[1] = highQualityGrassBlade;
 
 const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
     const distance = Vector3.Distance(patch.position, camera.position);
-    return distance < patchSize * 2 ? 1 : 0;
+    return distance < patchSize * 3 ? 1 : 0;
 });
 
 const ground = MeshBuilder.CreateGround("ground", {
@@ -87,6 +104,13 @@ ground.material = groundMaterial;
 
 const ui = new UI(scene);
 
+document.addEventListener("keypress", (e) => {
+    if (e.key === "p") {
+        // take screenshot
+        Tools.CreateScreenshot(engine, camera, {precision: 1});
+    }
+});
+
 let clock = 0;
 
 function updateScene() {
@@ -97,7 +121,7 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 
     grassScatterer.update(character.position);
 }

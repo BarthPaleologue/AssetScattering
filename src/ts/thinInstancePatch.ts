@@ -1,5 +1,7 @@
 import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
+import "@babylonjs/core/Meshes/thinInstanceMesh";
+import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
 
 export class ThinInstancePatch {
     private baseMesh: Mesh | null = null;
@@ -46,10 +48,16 @@ export class ThinInstancePatch {
 
     public createThinInstances(baseMesh: Mesh) {
         this.clearThinInstances();
+        if(this.baseMesh !== null) this.baseMesh.dispose();
         this.baseMesh = baseMesh.clone();
         this.baseMesh.makeGeometryUnique();
         this.baseMesh.isVisible = true;
         this.baseMesh.thinInstanceSetBuffer("matrix", this.matrixBuffer, 16);
+    }
+
+    public getTransform(): TransformNode {
+        if(this.baseMesh === null) throw new Error("Cannot get the transform of a patch without thin instances");
+        return this.baseMesh;
     }
 
     public getNbThinInstances() {

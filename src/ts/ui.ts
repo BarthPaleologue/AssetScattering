@@ -13,7 +13,7 @@ export class UI {
         container.width = "370px";
         container.height = "100px";
         container.cornerRadius = 5;
-        container.background = "rgba(0, 0, 0, 0.7)";
+        container.background = "rgba(0, 0, 0, 0.9)";
         container.horizontalAlignment = 0;
         container.verticalAlignment = 1;
         container.left = "20px";

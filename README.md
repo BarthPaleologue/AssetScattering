@@ -1,10 +1,14 @@
-# BabylonJS Template
+# Asset Scattering
 
 [![NodeJS with Webpack](https://github.com/BarthPaleologue/babylonjs-template/actions/workflows/webpack.yml/badge.svg)](https://github.com/BarthPaleologue/babylonjs-template/actions/workflows/webpack.yml)
 
-A simple template to quick start a BabylonJS project with a working webpack config out of the box and prettier and eslint.
+![Screenshot](./cover.png)
 
-This project has been created using **webpack-cli**, you can now run
+An asset scattering system built with BabylonJS.
+
+The grass rendering is based on [this video]() from Simon Dev. It is itself based on [this gdc conference]().
+
+The wind sound effect is from [this video](https://www.youtube.com/watch?v=a3aFMAalCpk).
 
 ```
 npm run build

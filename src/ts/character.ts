@@ -5,8 +5,11 @@ import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
 import character from "../assets/character.glb";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 
+import "@babylonjs/core/Animations/animatable";
+
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
-import {AbstractMesh, TransformNode} from "@babylonjs/core";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 export async function createCharacterController(scene: Scene, camera: ArcRotateCamera, inputMap: Map<string, boolean>): Promise<AbstractMesh> {
     const result = await SceneLoader.ImportMeshAsync("", "", character, scene);

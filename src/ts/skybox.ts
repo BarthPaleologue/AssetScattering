@@ -1,7 +1,7 @@
 import {Scene} from "@babylonjs/core/scene";
 import {SkyMaterial} from "@babylonjs/materials";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
-import {MeshBuilder} from "@babylonjs/core";
+import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
 
 export function createSkybox(scene: Scene, sunPosition: Vector3) {
     const skyMaterial = new SkyMaterial("skyMaterial", scene);
