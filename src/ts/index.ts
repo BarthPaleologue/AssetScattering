@@ -24,6 +24,7 @@ import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import windSound from "../assets/wind.mp3";
 
+import "@babylonjs/core/Collisions/collisionCoordinator"
 import "@babylonjs/core/Audio/audioSceneComponent";
 import "@babylonjs/core/Audio/audioEngine";
 import {Sound} from "@babylonjs/core/Audio/sound";
