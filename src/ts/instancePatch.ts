@@ -1,61 +1,65 @@
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
+import {IPatch} from "./iPatch";
 
-function swap(oldInstance: InstancedMesh, newInstance: InstancedMesh) {
-    newInstance.position.copyFrom(oldInstance.position);
-    newInstance.rotation.copyFrom(oldInstance.rotation);
-    newInstance.scaling.copyFrom(oldInstance.scaling);
-    oldInstance.dispose();
-}
-
-export class InstancePatch {
-    private readonly meshFromLod: Mesh[];
-    instances: InstancedMesh[];
+export class InstancePatch implements IPatch {
+    private baseMesh: Mesh | null = null;
     readonly position: Vector3;
-    readonly size: number;
-    readonly resolution: number;
-    lod: number;
 
-    constructor(baseMeshFromLOD: Mesh[], lod: number, patchPosition: Vector3, patchSize: number, patchResolution: number) {
-        this.meshFromLod = baseMeshFromLOD;
-        this.instances = InstancePatch.Scatter(baseMeshFromLOD[lod], patchPosition, patchSize, patchResolution);
-        this.position = patchPosition;
-        this.size = patchSize;
-        this.resolution = patchResolution;
-        this.lod = lod;
+    readonly instances: InstancedMesh[] = [];
+    private positions: Vector3[] = [];
+    private rotations: Quaternion[] = [];
+    private scalings: Vector3[] = [];
+
+    constructor(position: Vector3, matrixBuffer: Float32Array) {
+        this.position = position;
+
+        // decompose matrix buffer into position, rotation and scaling
+        for(let i = 0; i < matrixBuffer.length; i += 16) {
+            const matrixSubBuffer = matrixBuffer.subarray(i, i + 16);
+            const matrix = Matrix.FromArray(matrixSubBuffer);
+            const position = Vector3.Zero();
+            const rotation = Quaternion.Zero();
+            const scaling = Vector3.Zero();
+            matrix.decompose(scaling, rotation, position);
+
+            this.positions.push(position);
+            this.rotations.push(rotation);
+            this.scalings.push(scaling);
+        }
     }
 
-    setLOD(lod: number) {
-        if (lod === this.lod) return;
-
-        const newInstances = [];
-        for (const instance of this.instances) {
-            const bladeType = this.meshFromLod[lod];
-            const newInstance = bladeType.createInstance(instance.name);
-            swap(instance, newInstance);
-            newInstances.push(newInstance);
+    public clearInstances(): void {
+        if(this.baseMesh === null) return;
+        for(const instance of this.instances) {
+            instance.dispose();
         }
-
-        this.instances = newInstances;
-        this.lod = lod;
+        this.instances.length = 0;
     }
 
-    static Scatter(baseMesh: Mesh, patchPosition: Vector3, patchSize: number, patchResolution: number) {
-        const instances = [];
-        const cellSize = patchSize / patchResolution;
-        for (let x = 0; x < patchResolution; x++) {
-            for (let z = 0; z < patchResolution; z++) {
-                const instance = baseMesh.createInstance(`blade${x}${z}`);
-                const randomCellPositionX = Math.random() * cellSize;
-                const randomCellPositionZ = Math.random() * cellSize;
-                instance.position.x = patchPosition.x + (x / patchResolution) * patchSize - patchSize / 2 + randomCellPositionX;
-                instance.position.z = patchPosition.z + (z / patchResolution) * patchSize - patchSize / 2 + randomCellPositionZ;
-                instance.rotation.y = Math.random() * 2 * Math.PI;
-                instances.push(instance);
-            }
-        }
+    public createInstances(baseMesh: Mesh): void {
+        this.clearInstances();
+        if(this.baseMesh !== null) this.baseMesh.dispose();
+        this.baseMesh = baseMesh.clone();
+        this.baseMesh.makeGeometryUnique();
+        this.baseMesh.isVisible = false;
 
-        return instances;
+        for(let i = 0; i < this.positions.length; i++) {
+            const instance = this.baseMesh.createInstance(`instance${i}`);
+            instance.position.copyFrom(this.positions[i].add(this.baseMesh.position));
+            instance.rotationQuaternion = this.rotations[i];
+            instance.scaling.copyFrom(this.scalings[i]);
+            this.instances.push(instance);
+        }
+    }
+
+    public getNbInstances(): number {
+        if(this.baseMesh === null) return 0;
+        return this.baseMesh.thinInstanceCount;
+    }
+
+    public getPosition(): Vector3 {
+        return this.position;
     }
 }

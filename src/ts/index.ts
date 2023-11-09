@@ -41,6 +41,7 @@ import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {PhysicsShapeType} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
 import {IPatch} from "./iPatch";
+import {InstancePatch} from "./instancePatch";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -138,7 +139,7 @@ for (let x = -radius; x <= radius; x++) {
 
         const stride = 781;
         const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
-        const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
+        const cubePatch = new InstancePatch(chunkPosition, cubeMatrixBuffer);
         cubeScatterer.addPatch(cubePatch);
 
         /*scene.onBeforeRenderObservable.add(() => {
