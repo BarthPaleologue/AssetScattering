@@ -125,10 +125,9 @@ for(let x = -radius; x <= radius; x++) {
 
         const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
         grassScatterer.addPatch(grassPatch);
-        //grassPatch.createThinInstances(highQualityGrassBlade);
 
         const stride = 781;
-        const cubeMatrixBuffer = downSample(chunk.instancesMatrixBuffer, stride);
+        const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
         const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
         cubeScatterer.addPatch(cubePatch);
     }

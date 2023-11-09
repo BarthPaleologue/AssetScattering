@@ -78,18 +78,26 @@ function getTransformationQuaternion(from: Vector3, to: Vector3): Quaternion {
     return Quaternion.RotationAxis(rotationAxis, angle);
 }
 
-function scatterInTriangle(chunkPosition: Vector3, n: number, instanceIndex: number, instancesMatrixBuffer: Float32Array, positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number, instanceUp: Vector3 | null) {
+function scatterInTriangle(chunkPosition: Vector3, n: number, instanceIndex: number, instancesMatrixBuffer: Float32Array, alignedInstancesMatrixBuffer: Float32Array, positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number) {
     for (let i = 0; i < n; i++) {
         const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
-        const alignQuaternion = getTransformationQuaternion(Vector3.Up(), instanceUp ? instanceUp : new Vector3(nx, ny, nz));
+        const alignQuaternion = getTransformationQuaternion(Vector3.Up(), new Vector3(nx, ny, nz));
         const scaling = 0.9 + Math.random() * 0.2;
+        const rotation = Math.random() * 2 * Math.PI;
+        const alignedMatrix = Matrix.Compose(
+            new Vector3(scaling, scaling, scaling),
+            alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), rotation)),
+            new Vector3(x, y, z).addInPlace(chunkPosition)
+        );
         const matrix = Matrix.Compose(
             new Vector3(scaling, scaling, scaling),
-            alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI)),
+            Quaternion.RotationAxis(Vector3.Up(), rotation),
             new Vector3(x, y, z).addInPlace(chunkPosition)
         );
 
+        alignedMatrix.copyToArray(alignedInstancesMatrixBuffer, 16 * instanceIndex);
         matrix.copyToArray(instancesMatrixBuffer, 16 * instanceIndex);
+
         instanceIndex++;
     }
 
@@ -100,7 +108,9 @@ export class TerrainChunk {
     readonly nbVerticesPerRow: number;
     readonly mesh: Mesh;
     readonly material: StandardMaterial;
+
     readonly instancesMatrixBuffer: Float32Array;
+    readonly alignedInstancesMatrixBuffer: Float32Array;
 
     constructor(chunkPosition: Vector3, size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number] = () => [0, 0, 0]) {
         this.mesh = new Mesh("terrainPatch", scene);
@@ -121,6 +131,7 @@ export class TerrainChunk {
         const flatArea = size * size;
         const maxNbInstances = Math.floor(flatArea * scatterPerSquareMeter * 2.0);
         this.instancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+        this.alignedInstancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
 
         const stepSize = size / (this.nbVerticesPerRow - 1);
 
@@ -157,8 +168,8 @@ export class TerrainChunk {
                 const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
                 const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
                 excessInstanceNumber = (triangleArea1 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances1;
-                instanceIndex = scatterInTriangle(chunkPosition, nbInstances1, instanceIndex, this.instancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1, instanceUp);
-                if(instanceIndex >= maxNbInstances) {
+                instanceIndex = scatterInTriangle(chunkPosition, nbInstances1, instanceIndex, this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1);
+                if (instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
                 }
 
@@ -169,8 +180,8 @@ export class TerrainChunk {
                 const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
                 const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
                 excessInstanceNumber = (triangleArea2 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances2;
-                instanceIndex = scatterInTriangle(chunkPosition, nbInstances2, instanceIndex, this.instancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1, instanceUp);
-                if(instanceIndex >= maxNbInstances) {
+                instanceIndex = scatterInTriangle(chunkPosition, nbInstances2, instanceIndex, this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
+                if (instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
                 }
             }
@@ -179,6 +190,7 @@ export class TerrainChunk {
         console.log("Number of instances: " + instanceIndex);
 
         this.instancesMatrixBuffer = this.instancesMatrixBuffer.slice(0, 16 * instanceIndex);
+        this.alignedInstancesMatrixBuffer = this.alignedInstancesMatrixBuffer.slice(0, 16 * instanceIndex);
 
         const vertexData = new VertexData();
         vertexData.positions = positions;
