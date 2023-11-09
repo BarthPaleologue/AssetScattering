@@ -7,21 +7,15 @@ export class ThinInstanceScatterer {
     private readonly meshesFromLod: Mesh[];
     private readonly nbVertexFromLod: number[];
     private readonly patches: [ThinInstancePatch, number][] = [];
-    private readonly patchSize: number;
-    private readonly patchResolution: number;
-    private readonly radius: number;
 
     private lodUpdateCadence = 1;
 
     private readonly computeLodLevel: (patch: ThinInstancePatch) => number
     private readonly queue: Array<{ newLOD: number, patch: ThinInstancePatch }> = [];
 
-    constructor(meshesFromLod: Mesh[], radius: number, patchSize: number, patchResolution: number, computeLodLevel = (patch: ThinInstancePatch) => 0) {
+    constructor(meshesFromLod: Mesh[], computeLodLevel = (patch: ThinInstancePatch) => 0) {
         this.meshesFromLod = meshesFromLod;
         this.nbVertexFromLod = this.meshesFromLod.map((mesh) => mesh.getTotalVertices());
-        this.patchSize = patchSize;
-        this.patchResolution = patchResolution;
-        this.radius = radius;
         this.computeLodLevel = computeLodLevel;
     }
 

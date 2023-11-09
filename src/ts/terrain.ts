@@ -17,7 +17,7 @@ export class Terrain {
     }
 
     createChunk(position: Vector3, scatterPerSquareMeter: number): TerrainChunk {
-        const chunk = new TerrainChunk(position, this.chunkSize, this.chunkResolution, scatterPerSquareMeter, Vector3.Up(), this.scene, this.heightField);
+        const chunk = new TerrainChunk(position, this.chunkSize, this.chunkResolution, scatterPerSquareMeter, null, this.scene, this.heightField);
         this.chunks.push(chunk);
         return chunk;
     }

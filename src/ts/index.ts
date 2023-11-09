@@ -30,11 +30,9 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {Engine} from "@babylonjs/core";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {TerrainChunk} from "./terrainChunk";
 import {ThinInstanceScatterer} from "./thinInstanceScatterer";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {downSample} from "./matrixBuffer";
-import {showNormals} from "./debug";
 import {Terrain} from "./terrain";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
@@ -92,29 +90,38 @@ cube.isVisible = false;
 const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
 cube.material = cubeMaterial;
 
-const patchSize = 10;
-const patchResolution = patchSize * 5;
-const fieldRadius = 17;
+const terrainChunkSize = 20;
 
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
+const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, (patch: ThinInstancePatch) => {
     const distance = Vector3.Distance(patch.position, camera.position);
-    return distance < patchSize * 3 ? 1 : 0;
+    return distance < terrainChunkSize * 3 ? 1 : 0;
 });
-grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));
+const cubeScatterer = new ThinInstanceScatterer([cube]);
 
-/*const terrain = new Terrain(20, 16, (x, z) => {
-    const height = Math.cos(x * 0.1) * Math.sin(z * 0.1) * 3
+/*const patchSize = 10;
+const patchResolution = patchSize * 5;
+const fieldRadius = 17;
+grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));*/
 
-    const gradX = -Math.sin(x * 0.1) * Math.sin(z * 0.1) * 0.3;
-    const gradZ = Math.cos(x * 0.1) * Math.cos(z * 0.1) * 0.3;
+const terrain = new Terrain(20, 16, (x, z) => {
+    const height = Math.cos(x * 0.1) * Math.sin(z * 0.1) * 2
 
-    const nx = -gradX;
-    const ny = 1;
-    const nz = -gradZ;
+    const gradX = -Math.sin(x * 0.1) * Math.sin(z * 0.1) * 0.1;
+    const gradZ = Math.cos(x * 0.1) * Math.cos(z * 0.1) * 0.1;
+
+    let nx = -gradX;
+    let ny = 1;
+    let nz = -gradZ;
+
+    // normalize
+    const length = Math.sqrt(nx * nx + ny * ny + nz * nz);
+    nx /= length;
+    ny /= length;
+    nz /= length;
 
     return [height, nx, ny, nz];
 }, scene);
@@ -126,16 +133,18 @@ for(let x = -radius; x <= radius; x++) {
         const chunk = terrain.createChunk(chunkPosition, 50);
 
         const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
-        grassPatch.createThinInstances(highQualityGrassBlade);
+        grassScatterer.addPatch(grassPatch);
+        //grassPatch.createThinInstances(highQualityGrassBlade);
 
         const stride = 781;
         const cubeMatrixBuffer = downSample(chunk.instancesMatrixBuffer, stride);
         const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
-        cubePatch.createThinInstances(cube);
+        cubeScatterer.addPatch(cubePatch);
     }
-}*/
+}
 
 grassScatterer.initInstances();
+cubeScatterer.initInstances();
 
 const ui = new UI(scene);
 
@@ -156,10 +165,12 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    //ui.setText(`${grassPatch.getNbThinInstances().toLocaleString()} grass blades\n${cubePatch.getNbThinInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${cubeScatterer.getNbThinInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
 
-    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    //ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+
     grassScatterer.update(camera.position);
+    cubeScatterer.update(camera.position);
 }
 
 scene.executeWhenReady(() => {
