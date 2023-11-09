@@ -1,4 +1,3 @@
-import {Engine} from "@babylonjs/core/Engines/engine";
 import {Scene} from "@babylonjs/core/scene";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Texture} from "@babylonjs/core/Materials/Textures/texture";
@@ -33,7 +32,7 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {EngineFactory} from "@babylonjs/core";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {TerrainPatch} from "./terrainPatch";
+import {TerrainChunk} from "./terrainChunk";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -100,7 +99,7 @@ const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, 
     return distance < patchSize * 3 ? 1 : 0;
 });*/
 
-const ground = new TerrainPatch(100, 64, 50, Vector3.Up(), scene, (x, y) => {
+const ground = new TerrainChunk(100, 64, 50, Vector3.Up(), scene, (x, y) => {
     const height = Math.cos(x * 0.1) * Math.sin(y * 0.1) * 3
     const nx = -Math.cos(x * 0.1) * Math.sin(y * 0.1);
     const ny = Math.sin(x * 0.1) * Math.cos(y * 0.1);
@@ -118,7 +117,7 @@ const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
 cube.material = cubeMaterial;
 
 // take on in ten instances
-const stride = 250;
+const stride = 781;
 const cubeMatrixBuffer = new Float32Array(16 * Math.floor(ground.instancesMatrixBuffer.length / stride));
 let instanceIndex = 0;
 for (let i = 0; i < ground.instancesMatrixBuffer.length; i += 16 * stride) {

@@ -96,7 +96,7 @@ function scatterInTriangle(n: number, instanceIndex: number, instancesMatrixBuff
     return instanceIndex;
 }
 
-export class TerrainPatch {
+export class TerrainChunk {
     readonly nbVerticesPerRow: number;
     readonly mesh: Mesh;
     readonly material: StandardMaterial;
@@ -124,6 +124,7 @@ export class TerrainPatch {
 
         let indexIndex = 0;
         let instanceIndex = 0;
+        let excessInstanceNumber = 0;
         for (let x = 0; x < this.nbVerticesPerRow; x++) {
             for (let y = 0; y < this.nbVerticesPerRow; y++) {
                 const index = x * this.nbVerticesPerRow + y;
@@ -147,7 +148,8 @@ export class TerrainPatch {
                 indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
 
                 const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
-                const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter);
+                const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
+                excessInstanceNumber = (triangleArea1 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances1;
                 instanceIndex = scatterInTriangle(nbInstances1, instanceIndex, this.instancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1, instanceUp);
                 if(instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
@@ -158,7 +160,8 @@ export class TerrainPatch {
                 indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
 
                 const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
-                const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter);
+                const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
+                excessInstanceNumber = (triangleArea2 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances2;
                 instanceIndex = scatterInTriangle(nbInstances2, instanceIndex, this.instancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1, instanceUp);
                 if(instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
