@@ -133,7 +133,7 @@ export class TerrainChunk {
                 const positionX = x * stepSize - size / 2;
                 const positionY = y * stepSize - size / 2;
 
-                const [height, normalX, normalY, normalZ] = terrainFunction(positionX, positionY);
+                const [height, normalX, normalY, normalZ] = terrainFunction(this.mesh.position.x + positionX, this.mesh.position.z + positionY);
 
                 positions[3 * index + 0] = positionX;
                 positions[3 * index + 1] = height;

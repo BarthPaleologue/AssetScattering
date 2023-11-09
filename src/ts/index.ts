@@ -34,6 +34,8 @@ import {TerrainChunk} from "./terrainChunk";
 import {ThinInstanceScatterer} from "./thinInstanceScatterer";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {downSample} from "./matrixBuffer";
+import {showNormals} from "./debug";
+import {Terrain} from "./terrain";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -103,25 +105,30 @@ const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, 
     return distance < patchSize * 3 ? 1 : 0;
 });*/
 
+const terrain = new Terrain(20, 16, (x, z) => {
+    const height = Math.cos(x * 0.1) * Math.sin(z * 0.1) * 3
+
+    const gradX = -Math.sin(x * 0.1) * Math.sin(z * 0.1) * 0.3;
+    const gradZ = Math.cos(x * 0.1) * Math.cos(z * 0.1) * 0.3;
+
+    const nx = -gradX;
+    const ny = 1;
+    const nz = -gradZ;
+
+    return [height, nx, ny, nz];
+}, scene);
+
 const radius = 2;
 for(let x = -radius; x <= radius; x++) {
     for(let z = -radius; z <= radius; z++) {
         const chunkPosition = new Vector3(x * 20, 0, z * 20);
-        const ground = new TerrainChunk(chunkPosition, 20, 16, 50, Vector3.Up(), scene, (lx, lz) => {
-            const positionX = chunkPosition.x + lx;
-            const positionZ = chunkPosition.z + lz;
-            const height = Math.cos(positionX * 0.1) * Math.sin(positionZ * 0.1) * 3
-            const nx = 0;
-            const ny = 1;
-            const nz = 0;
-            return [height, nx, ny, nz];
-        });
+        const chunk = terrain.createChunk(chunkPosition, 50);
 
-        const grassPatch = new ThinInstancePatch(chunkPosition, ground.instancesMatrixBuffer);
+        const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
         grassPatch.createThinInstances(highQualityGrassBlade);
 
         const stride = 781;
-        const cubeMatrixBuffer = downSample(ground.instancesMatrixBuffer, stride);
+        const cubeMatrixBuffer = downSample(chunk.instancesMatrixBuffer, stride);
         const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
         cubePatch.createThinInstances(cube);
     }

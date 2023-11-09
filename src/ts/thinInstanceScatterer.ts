@@ -1,6 +1,7 @@
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {ThinInstancePatch} from "./thinInstancePatch";
+import {createSquareMatrixBuffer} from "./matrixBuffer";
 
 export class ThinInstanceScatterer {
     private readonly meshesFromLod: Mesh[];
@@ -29,7 +30,7 @@ export class ThinInstanceScatterer {
                 if (radiusSquared >= this.radius * this.radius) continue;
 
                 const patchPosition = new Vector3(x * this.patchSize, 0, z * this.patchSize);
-                const patchMatrixBuffer = ThinInstancePatch.createSquareMatrixBuffer(patchPosition, this.patchSize, this.patchResolution);
+                const patchMatrixBuffer = createSquareMatrixBuffer(patchPosition, this.patchSize, this.patchResolution);
                 const patch = new ThinInstancePatch(patchPosition, patchMatrixBuffer);
                 const patchLod = this.computeLodLevel(patch);
 
