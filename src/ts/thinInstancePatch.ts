@@ -1,11 +1,12 @@
-import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
+import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import "@babylonjs/core/Meshes/thinInstanceMesh";
 import {createSquareMatrixBuffer} from "./utils/matrixBuffer";
+import {IPatch} from "./iPatch";
 
-export class ThinInstancePatch {
+export class ThinInstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
-    readonly position: Vector3;
+    private readonly position: Vector3;
     readonly matrixBuffer: Float32Array;
 
     constructor(patchPosition: Vector3, matrixBuffer: Float32Array) {
@@ -18,13 +19,13 @@ export class ThinInstancePatch {
         return new ThinInstancePatch(position, buffer);
     }
 
-    public clearThinInstances() {
+    public clearInstances(): void {
         if(this.baseMesh === null) return;
         this.baseMesh.thinInstanceCount = 0;
     }
 
-    public createThinInstances(baseMesh: Mesh) {
-        this.clearThinInstances();
+    public createInstances(baseMesh: Mesh): void {
+        this.clearInstances();
         if(this.baseMesh !== null) this.baseMesh.dispose();
         this.baseMesh = baseMesh.clone();
         this.baseMesh.makeGeometryUnique();
@@ -32,8 +33,12 @@ export class ThinInstancePatch {
         this.baseMesh.thinInstanceSetBuffer("matrix", this.matrixBuffer, 16);
     }
 
-    public getNbThinInstances() {
+    public getNbInstances(): number {
         if(this.baseMesh === null) return 0;
         return this.baseMesh.thinInstanceCount;
+    }
+
+    public getPosition(): Vector3 {
+        return this.position;
     }
 }

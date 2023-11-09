@@ -29,12 +29,13 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {Engine} from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {ThinInstanceScatterer} from "./thinInstanceScatterer";
+import {PatchManager} from "./patchManager";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
 import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
+import {IPatch} from "./iPatch";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
@@ -98,12 +99,12 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, (patch: ThinInstancePatch) => {
-    const distance = Vector3.Distance(patch.position, camera.position);
+const grassScatterer = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
+    const distance = Vector3.Distance(patch.getPosition(), camera.position);
     return distance < patchSize * 3 ? 1 : 0;
 });
 
-grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));
+grassScatterer.addPatches(PatchManager.circleInit(fieldRadius, patchSize, patchResolution));
 grassScatterer.initInstances();
 
 const ground = MeshBuilder.CreateGround("ground", {
@@ -134,7 +135,7 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassScatterer.getNbInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 
     grassScatterer.update(camera.position);
 }

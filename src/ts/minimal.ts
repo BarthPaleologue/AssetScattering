@@ -46,7 +46,7 @@ const patchSize = 20;
 const patchResolution = patchSize * 10;
 
 const patch = ThinInstancePatch.CreateSquare(new Vector3(0, 0, 0), patchSize, patchResolution);
-patch.createThinInstances(grassBlade);
+patch.createInstances(grassBlade);
 
 let elapsedSeconds = 0;
 function updateScene() {

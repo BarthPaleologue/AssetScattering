@@ -2,30 +2,31 @@ import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {ThinInstancePatch} from "./thinInstancePatch";
 import {createSquareMatrixBuffer} from "./utils/matrixBuffer";
+import {IPatch} from "./iPatch";
 
-export class ThinInstanceScatterer {
+export class PatchManager {
     private readonly meshesFromLod: Mesh[];
     private readonly nbVertexFromLod: number[];
-    private readonly patches: [ThinInstancePatch, number][] = [];
+    private readonly patches: [IPatch, number][] = [];
 
     private lodUpdateCadence = 1;
 
-    private readonly computeLodLevel: (patch: ThinInstancePatch) => number
-    private readonly queue: Array<{ newLOD: number, patch: ThinInstancePatch }> = [];
+    private readonly computeLodLevel: (patch: IPatch) => number
+    private readonly queue: Array<{ newLOD: number, patch: IPatch }> = [];
 
-    constructor(meshesFromLod: Mesh[], computeLodLevel = (patch: ThinInstancePatch) => 0) {
+    constructor(meshesFromLod: Mesh[], computeLodLevel = (patch: IPatch) => 0) {
         this.meshesFromLod = meshesFromLod;
         this.nbVertexFromLod = this.meshesFromLod.map((mesh) => mesh.getTotalVertices());
         this.computeLodLevel = computeLodLevel;
     }
 
-    public addPatch(patch: ThinInstancePatch) {
+    public addPatch(patch: IPatch) {
         const lod = this.computeLodLevel(patch);
         this.patches.push([patch, lod]);
         this.queue.push({newLOD: lod, patch: patch});
     }
 
-    public addPatches(patches: ThinInstancePatch[]) {
+    public addPatches(patches: IPatch[]) {
         for(const patch of patches) {
             this.addPatch(patch);
         }
@@ -71,7 +72,7 @@ export class ThinInstanceScatterer {
         for(let i = 0; i < n; i++) {
             const head = this.queue.shift();
             if(head === undefined) break;
-            head.patch.createThinInstances(this.meshesFromLod[head.newLOD]);
+            head.patch.createInstances(this.meshesFromLod[head.newLOD]);
         }
     }
 
@@ -83,10 +84,10 @@ export class ThinInstanceScatterer {
         this.lodUpdateCadence = cadence;
     }
 
-    public getNbThinInstances() {
+    public getNbInstances() {
         let count = 0;
         for (const [patch] of this.patches) {
-            count += patch.getNbThinInstances();
+            count += patch.getNbInstances();
         }
         return count;
     }
@@ -94,7 +95,7 @@ export class ThinInstanceScatterer {
     public getNbVertices() {
         let count = 0;
         for (const [patch, patchLod] of this.patches) {
-            count += this.nbVertexFromLod[patchLod] * patch.getNbThinInstances();
+            count += this.nbVertexFromLod[patchLod] * patch.getNbInstances();
         }
         return count;
     }

@@ -31,7 +31,7 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {Engine} from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {ThinInstanceScatterer} from "./thinInstanceScatterer";
+import {PatchManager} from "./patchManager";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {downSample} from "./utils/matrixBuffer";
 import {Terrain} from "./terrain/terrain";
@@ -40,6 +40,7 @@ import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {PhysicsShapeType} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
+import {IPatch} from "./iPatch";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -105,11 +106,11 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, (patch: ThinInstancePatch) => {
-    const distance = Vector3.Distance(patch.position, camera.position);
+const grassScatterer = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
+    const distance = Vector3.Distance(patch.getPosition(), camera.position);
     return distance < terrainChunkSize * 3 ? 1 : 0;
 });
-const cubeScatterer = new ThinInstanceScatterer([cube]);
+const cubeScatterer = new PatchManager([cube]);
 
 /*const patchSize = 10;
 const patchResolution = patchSize * 5;
@@ -139,6 +140,12 @@ for (let x = -radius; x <= radius; x++) {
         const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
         const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
         cubeScatterer.addPatch(cubePatch);
+
+        /*scene.onBeforeRenderObservable.add(() => {
+            if(cubePatch.getMesh().getBoundingInfo().intersects(character.getBoundingInfo(), true)) {
+                console.log("collision");
+            }
+        });*/
     }
 }
 
@@ -164,7 +171,7 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${cubeScatterer.getNbThinInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassScatterer.getNbInstances().toLocaleString()} grass blades\n${cubeScatterer.getNbInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
 
     //ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 
