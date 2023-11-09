@@ -29,7 +29,8 @@ export class ThinInstanceScatterer {
                 if (radiusSquared >= this.radius * this.radius) continue;
 
                 const patchPosition = new Vector3(x * this.patchSize, 0, z * this.patchSize);
-                const patch = new ThinInstancePatch(patchPosition, this.patchSize, this.patchResolution);
+                const patchMatrixBuffer = ThinInstancePatch.createSquareMatrixBuffer(patchPosition, this.patchSize, this.patchResolution);
+                const patch = new ThinInstancePatch(patchPosition, patchMatrixBuffer);
                 const patchLod = this.computeLodLevel(patch);
 
                 this.map.set(patchPosition, [patch, patchLod]);

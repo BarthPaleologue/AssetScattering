@@ -6,27 +6,23 @@ import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
 export class ThinInstancePatch {
     private baseMesh: Mesh | null = null;
     readonly position: Vector3;
-    readonly size: number;
-    readonly resolution: number;
-    readonly matrixBuffer: Float32Array;
+    readonly matrixBuffer: Float32Array | null;
 
-    constructor(patchPosition: Vector3, patchSize: number, patchResolution: number, matrixBuffer: Float32Array | null = null) {
+    constructor(patchPosition: Vector3, matrixBuffer: Float32Array | null = null) {
         this.position = patchPosition;
-        this.size = patchSize;
-        this.resolution = patchResolution;
-        this.matrixBuffer = matrixBuffer === null ? new Float32Array(16 * this.resolution * this.resolution) : matrixBuffer;
-        if(matrixBuffer === null) this.populateMatrixBuffer();
+        this.matrixBuffer = matrixBuffer;
     }
 
-    public populateMatrixBuffer() {
-        const cellSize = this.size / this.resolution;
+    public static createSquareMatrixBuffer(position: Vector3, size: number, resolution: number) {
+        const matrixBuffer = new Float32Array(resolution * resolution * 16);
+        const cellSize = size / resolution;
         let index = 0;
-        for (let x = 0; x < this.resolution; x++) {
-            for (let z = 0; z < this.resolution; z++) {
+        for (let x = 0; x < resolution; x++) {
+            for (let z = 0; z < resolution; z++) {
                 const randomCellPositionX = Math.random() * cellSize;
                 const randomCellPositionZ = Math.random() * cellSize;
-                const positionX = this.position.x + x * cellSize - (this.size / 2) + randomCellPositionX;
-                const positionZ = this.position.z + z * cellSize - (this.size / 2) + randomCellPositionZ;
+                const positionX = position.x + x * cellSize - (size / 2) + randomCellPositionX;
+                const positionZ = position.z + z * cellSize - (size / 2) + randomCellPositionZ;
                 const scaling = 0.7 + Math.random() * 0.6;
 
                 const matrix = Matrix.Compose(
@@ -34,11 +30,13 @@ export class ThinInstancePatch {
                     Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI),
                     new Vector3(positionX, 0, positionZ)
                 );
-                matrix.copyToArray(this.matrixBuffer, 16 * index);
+                matrix.copyToArray(matrixBuffer, 16 * index);
 
                 index += 1;
             }
         }
+
+        return matrixBuffer;
     }
 
     public clearThinInstances() {

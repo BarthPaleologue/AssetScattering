@@ -87,7 +87,7 @@ material.setTexture("perlinNoise", perlinTexture);
 highQualityGrassBlade.material = material;
 lowQualityGrassBlade.material = material;
 
-const patchSize = 10;
+/*const patchSize = 10;
 const patchResolution = patchSize * 5;
 const fieldRadius = 17;
 
@@ -95,7 +95,7 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-/*const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
+const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
     const distance = Vector3.Distance(patch.position, camera.position);
     return distance < patchSize * 3 ? 1 : 0;
 });*/
@@ -108,7 +108,7 @@ const ground = new TerrainPatch(100, 64, 50, Vector3.Up(), scene, (x, y) => {
     return [height, nx, ny, nz];
 });
 
-const grassPatch = new ThinInstancePatch(new Vector3(0, 0, 0), 10, 5, ground.instancesMatrixBuffer);
+const grassPatch = new ThinInstancePatch(new Vector3(0, 0, 0), ground.instancesMatrixBuffer);
 grassPatch.createThinInstances(highQualityGrassBlade);
 
 const cube = MeshBuilder.CreateBox("cube", {size: 1}, scene);
@@ -119,13 +119,13 @@ cube.material = cubeMaterial;
 
 // take on in ten instances
 const stride = 250;
-const cubeMatrixBuffer = new Float32Array(16 * Math.floor(grassPatch.matrixBuffer.length / stride));
+const cubeMatrixBuffer = new Float32Array(16 * Math.floor(ground.instancesMatrixBuffer.length / stride));
 let instanceIndex = 0;
-for (let i = 0; i < grassPatch.matrixBuffer.length; i += 16 * stride) {
-    cubeMatrixBuffer.set(grassPatch.matrixBuffer.subarray(i, i + 16), instanceIndex * 16);
+for (let i = 0; i < ground.instancesMatrixBuffer.length; i += 16 * stride) {
+    cubeMatrixBuffer.set(ground.instancesMatrixBuffer.subarray(i, i + 16), instanceIndex * 16);
     instanceIndex++;
 }
-const cubePatch = new ThinInstancePatch(new Vector3(0, 0, 0), 10, 5, cubeMatrixBuffer);
+const cubePatch = new ThinInstancePatch(new Vector3(0, 0, 0), cubeMatrixBuffer);
 cubePatch.createThinInstances(cube);
 
 const ui = new UI(scene);
@@ -149,8 +149,8 @@ function updateScene() {
 
     ui.setText(`${grassPatch.getNbThinInstances().toLocaleString()} grass blades\n${cubePatch.getNbThinInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
 
-    /*ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
-    grassScatterer.update(character.position);*/
+    //ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    //grassScatterer.update(character.position);
 }
 
 scene.executeWhenReady(() => {
