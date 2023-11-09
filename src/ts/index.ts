@@ -36,16 +36,24 @@ import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {downSample} from "./utils/matrixBuffer";
 import {Terrain} from "./terrain/terrain";
 
+import HavokPhysics from "@babylonjs/havok";
+import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
+import {PhysicsShapeType} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
+
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const engine = new Engine(canvas, true);
-
 engine.displayLoadingUI();
+
+const havokInstance = await HavokPhysics();
+const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
 scene.useRightHandedSystem = true;
+scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
 
 const inputMap: Map<string, boolean> = new Map<string, boolean>();
 scene.actionManager = new ActionManager(scene);
@@ -119,8 +127,8 @@ const terrain = new Terrain(20, 16, (x, z) => {
 }, scene);
 
 const radius = 2;
-for(let x = -radius; x <= radius; x++) {
-    for(let z = -radius; z <= radius; z++) {
+for (let x = -radius; x <= radius; x++) {
+    for (let z = -radius; z <= radius; z++) {
         const chunkPosition = new Vector3(x * 20, 0, z * 20);
         const chunk = terrain.createChunk(chunkPosition, 50);
 

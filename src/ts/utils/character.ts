@@ -8,8 +8,10 @@ import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import "@babylonjs/core/Animations/animatable";
 
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import {AbstractMesh} from "@babylonjs/core/Meshes/abstractMesh";
+import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
+import {PhysicsRaycastResult} from "@babylonjs/core/Physics/physicsRaycastResult";
+import {PhysicsEngineV2} from "@babylonjs/core/Physics/v2";
 
 export async function createCharacterController(scene: Scene, camera: ArcRotateCamera, inputMap: Map<string, boolean>): Promise<AbstractMesh> {
     const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
@@ -46,8 +48,10 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
     if (sambaAnim === null)
         throw new Error("'Samba' animation not found");
 
+    const raycastResult = new PhysicsRaycastResult();
+
     //Rendering loop (executed for everyframe)
-    scene.onBeforeRenderObservable.add(() => {
+    scene.onBeforePhysicsObservable.add(() => {
 
         let keydown = false;
         //Manage the movements of the character (e.g. position, direction)
@@ -87,7 +91,6 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
                 }
             }
         } else {
-
             if (animating) {
                 //Default animation is idle when no key is down
                 idleAnim.start(true, 1, idleAnim.from, idleAnim.to, false);
@@ -101,6 +104,15 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
                 animating = false;
             }
         }
+
+        const start = hero.position.add(Vector3.Up().scale(50));
+        const end = hero.position.add(Vector3.Down().scale(50));
+        (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
+
+        if (raycastResult.hasHit) {
+            hero.position.y = raycastResult.hitPointWorld.y + 0.01;
+        }
+
     });
 
     return hero;
