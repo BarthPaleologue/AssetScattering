@@ -187,8 +187,6 @@ export class TerrainChunk {
             }
         }
 
-        console.log("Number of instances: " + instanceIndex);
-
         this.instancesMatrixBuffer = this.instancesMatrixBuffer.slice(0, 16 * instanceIndex);
         this.alignedInstancesMatrixBuffer = this.alignedInstancesMatrixBuffer.slice(0, 16 * instanceIndex);
 

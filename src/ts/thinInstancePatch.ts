@@ -1,6 +1,7 @@
 import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import "@babylonjs/core/Meshes/thinInstanceMesh";
+import {createSquareMatrixBuffer} from "./utils/matrixBuffer";
 
 export class ThinInstancePatch {
     private baseMesh: Mesh | null = null;
@@ -10,6 +11,11 @@ export class ThinInstancePatch {
     constructor(patchPosition: Vector3, matrixBuffer: Float32Array) {
         this.position = patchPosition;
         this.matrixBuffer = matrixBuffer;
+    }
+
+    public static CreateSquare(position: Vector3, size: number, resolution: number) {
+        const buffer = createSquareMatrixBuffer(position, size, resolution);
+        return new ThinInstancePatch(position, buffer);
     }
 
     public clearThinInstances() {

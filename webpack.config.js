@@ -11,6 +11,8 @@ const config = {
 
     entry: {
         index: "./src/ts/index.ts",
+        minimal: "./src/ts/minimal.ts",
+        flatfield: "./src/ts/flatfield"
     },
     output: {
         path: path.resolve(__dirname, "dist")
@@ -27,6 +29,18 @@ const config = {
             filename: "index.html",
             template: path.join(htmlPath, "index.html"),
             chunks: ["index"]
+        }),
+        new HtmlWebpackPlugin({
+            title: "Asset Scattering - Minimal",
+            filename: "minimal.html",
+            template: path.join(htmlPath, "index.html"),
+            chunks: ["minimal"]
+        }),
+        new HtmlWebpackPlugin({
+            title: "Asset Scattering - Flat Field",
+            filename: "field.html",
+            template: path.join(htmlPath, "index.html"),
+            chunks: ["flatfield"]
         }),
         new MiniCssExtractPlugin()
     ],

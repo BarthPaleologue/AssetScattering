@@ -2,7 +2,7 @@ import {SceneLoader} from "@babylonjs/core/Loading/sceneLoader";
 import {Scene} from "@babylonjs/core/scene";
 import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
 
-import character from "../assets/character.glb";
+import character from "../../assets/character.glb";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 
 import "@babylonjs/core/Animations/animatable";
