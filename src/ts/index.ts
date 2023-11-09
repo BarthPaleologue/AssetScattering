@@ -108,22 +108,13 @@ const fieldRadius = 17;
 grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));*/
 
 const terrain = new Terrain(20, 16, (x, z) => {
-    const height = Math.cos(x * 0.1) * Math.sin(z * 0.1) * 2
+    const heightMultiplier = 5;
+    const frequency = 0.1;
+    const height = Math.cos(x * frequency) * Math.sin(z * frequency) * heightMultiplier;
+    const gradX = -Math.sin(x * frequency) * Math.sin(z * frequency) * frequency * heightMultiplier;
+    const gradZ = Math.cos(x * frequency) * Math.cos(z * frequency) * frequency * heightMultiplier;
 
-    const gradX = -Math.sin(x * 0.1) * Math.sin(z * 0.1) * 0.1;
-    const gradZ = Math.cos(x * 0.1) * Math.cos(z * 0.1) * 0.1;
-
-    let nx = -gradX;
-    let ny = 1;
-    let nz = -gradZ;
-
-    // normalize
-    const length = Math.sqrt(nx * nx + ny * ny + nz * nz);
-    nx /= length;
-    ny /= length;
-    nz /= length;
-
-    return [height, nx, ny, nz];
+    return [height, gradX, gradZ];
 }, scene);
 
 const radius = 2;

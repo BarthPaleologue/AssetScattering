@@ -102,7 +102,7 @@ export class TerrainChunk {
     readonly material: StandardMaterial;
     readonly instancesMatrixBuffer: Float32Array;
 
-    constructor(chunkPosition: Vector3, size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, normalX: number, normalY: number, normalZ: number] = () => [0, 0, 1, 0]) {
+    constructor(chunkPosition: Vector3, size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number] = () => [0, 0, 0]) {
         this.mesh = new Mesh("terrainPatch", scene);
         this.mesh.position = chunkPosition;
 
@@ -133,15 +133,20 @@ export class TerrainChunk {
                 const positionX = x * stepSize - size / 2;
                 const positionY = y * stepSize - size / 2;
 
-                const [height, normalX, normalY, normalZ] = terrainFunction(this.mesh.position.x + positionX, this.mesh.position.z + positionY);
+                const [height, gradX, gradZ] = terrainFunction(this.mesh.position.x + positionX, this.mesh.position.z + positionY);
 
                 positions[3 * index + 0] = positionX;
                 positions[3 * index + 1] = height;
                 positions[3 * index + 2] = positionY;
 
-                normals[3 * index + 0] = normalX;
-                normals[3 * index + 1] = normalY;
-                normals[3 * index + 2] = normalZ;
+                const normalX = -gradX;
+                const normalY = 1;
+                const normalZ = -gradZ;
+                const normalLength = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+
+                normals[3 * index + 0] = normalX / normalLength;
+                normals[3 * index + 1] = normalY / normalLength;
+                normals[3 * index + 2] = normalZ / normalLength;
 
                 if (x == 0 || y == 0) continue;
 
