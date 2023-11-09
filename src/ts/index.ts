@@ -92,7 +92,7 @@ cube.isVisible = false;
 const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
 cube.material = cubeMaterial;
 
-/*const patchSize = 10;
+const patchSize = 10;
 const patchResolution = patchSize * 5;
 const fieldRadius = 17;
 
@@ -103,9 +103,10 @@ bladeMeshFromLod[1] = highQualityGrassBlade;
 const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, patchSize, patchResolution, (patch: ThinInstancePatch) => {
     const distance = Vector3.Distance(patch.position, camera.position);
     return distance < patchSize * 3 ? 1 : 0;
-});*/
+});
+grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));
 
-const terrain = new Terrain(20, 16, (x, z) => {
+/*const terrain = new Terrain(20, 16, (x, z) => {
     const height = Math.cos(x * 0.1) * Math.sin(z * 0.1) * 3
 
     const gradX = -Math.sin(x * 0.1) * Math.sin(z * 0.1) * 0.3;
@@ -132,7 +133,9 @@ for(let x = -radius; x <= radius; x++) {
         const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
         cubePatch.createThinInstances(cube);
     }
-}
+}*/
+
+grassScatterer.initInstances();
 
 const ui = new UI(scene);
 
@@ -155,8 +158,8 @@ function updateScene() {
 
     //ui.setText(`${grassPatch.getNbThinInstances().toLocaleString()} grass blades\n${cubePatch.getNbThinInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
 
-    //ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
-    //grassScatterer.update(character.position);
+    ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    grassScatterer.update(camera.position);
 }
 
 scene.executeWhenReady(() => {

@@ -6,7 +6,7 @@ import {createSquareMatrixBuffer} from "./matrixBuffer";
 export class ThinInstanceScatterer {
     private readonly meshesFromLod: Mesh[];
     private readonly nbVertexFromLod: number[];
-    private readonly map = new Map<Vector3, [ThinInstancePatch, number]>();
+    private readonly patches: [ThinInstancePatch, number][] = [];
     private readonly patchSize: number;
     private readonly patchResolution: number;
     private readonly radius: number;
@@ -14,7 +14,7 @@ export class ThinInstanceScatterer {
     private lodUpdateCadence = 1;
 
     private readonly computeLodLevel: (patch: ThinInstancePatch) => number
-    private readonly updateQueue: Array<{ newLOD: number, patch: ThinInstancePatch }> = [];
+    private readonly queue: Array<{ newLOD: number, patch: ThinInstancePatch }> = [];
 
     constructor(meshesFromLod: Mesh[], radius: number, patchSize: number, patchResolution: number, computeLodLevel = (patch: ThinInstancePatch) => 0) {
         this.meshesFromLod = meshesFromLod;
@@ -23,22 +23,36 @@ export class ThinInstanceScatterer {
         this.patchResolution = patchResolution;
         this.radius = radius;
         this.computeLodLevel = computeLodLevel;
+    }
 
-        for (let x = -this.radius; x <= this.radius; x++) {
-            for (let z = -this.radius; z <= this.radius; z++) {
+    public addPatch(patch: ThinInstancePatch) {
+        const lod = this.computeLodLevel(patch);
+        this.patches.push([patch, lod]);
+        this.queue.push({newLOD: lod, patch: patch});
+    }
+
+    public addPatches(patches: ThinInstancePatch[]) {
+        for(const patch of patches) {
+            this.addPatch(patch);
+        }
+    }
+
+    public static circleInit(radius: number, patchSize: number, patchResolution: number): ThinInstancePatch[] {
+        const patches: ThinInstancePatch[] = [];
+        for (let x = -radius; x <= radius; x++) {
+            for (let z = -radius; z <= radius; z++) {
                 const radiusSquared = x * x + z * z;
-                if (radiusSquared >= this.radius * this.radius) continue;
+                if (radiusSquared >= radius * radius) continue;
 
-                const patchPosition = new Vector3(x * this.patchSize, 0, z * this.patchSize);
-                const patchMatrixBuffer = createSquareMatrixBuffer(patchPosition, this.patchSize, this.patchResolution);
+                const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
+                const patchMatrixBuffer = createSquareMatrixBuffer(patchPosition, patchSize, patchResolution);
                 const patch = new ThinInstancePatch(patchPosition, patchMatrixBuffer);
-                const patchLod = this.computeLodLevel(patch);
 
-                this.map.set(patchPosition, [patch, patchLod]);
-
-                patch.createThinInstances(this.meshesFromLod[patchLod]);
+                patches.push(patch);
             }
         }
+
+        return patches;
     }
 
     public update(playerPosition: Vector3) {
@@ -47,19 +61,28 @@ export class ThinInstanceScatterer {
 
     private updateLOD() {
         // update LOD
-        for(const [patch, patchLod] of this.map.values()) {
+        for(let i = 0; i < this.patches.length; i++) {
+            const [patch, patchLod] = this.patches[i];
             const newLod = this.computeLodLevel(patch);
             if(newLod === patchLod) continue;
-            this.updateQueue.push({newLOD: newLod, patch: patch});
-            this.map.set(patch.position, [patch, newLod]);
+            this.queue.push({newLOD: newLod, patch: patch});
+            this.patches[i] = [patch, newLod];
         }
 
+        this.updateQueue(this.lodUpdateCadence);
+    }
+
+    private updateQueue(n: number) {
         // update queue
-        for(let i = 0; i < this.lodUpdateCadence; i++) {
-            const head = this.updateQueue.shift();
+        for(let i = 0; i < n; i++) {
+            const head = this.queue.shift();
             if(head === undefined) break;
             head.patch.createThinInstances(this.meshesFromLod[head.newLOD]);
         }
+    }
+
+    public initInstances() {
+        this.updateQueue(this.queue.length);
     }
 
     public setLodUpdateCadence(cadence: number) {
@@ -68,7 +91,7 @@ export class ThinInstanceScatterer {
 
     public getNbThinInstances() {
         let count = 0;
-        for (const [patch] of this.map.values()) {
+        for (const [patch] of this.patches) {
             count += patch.getNbThinInstances();
         }
         return count;
@@ -76,7 +99,7 @@ export class ThinInstanceScatterer {
 
     public getNbVertices() {
         let count = 0;
-        for (const [patch, patchLod] of this.map.values()) {
+        for (const [patch, patchLod] of this.patches) {
             count += this.nbVertexFromLod[patchLod] * patch.getNbThinInstances();
         }
         return count;
