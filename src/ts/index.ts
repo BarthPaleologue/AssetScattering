@@ -31,6 +31,9 @@ import {Engine} from "@babylonjs/core";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
 import {TerrainChunk} from "./terrainChunk";
+import {ThinInstanceScatterer} from "./thinInstanceScatterer";
+import {Mesh} from "@babylonjs/core/Meshes/mesh";
+import {downSample} from "./matrixBuffer";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -81,6 +84,12 @@ material.setTexture("perlinNoise", perlinTexture);
 highQualityGrassBlade.material = material;
 lowQualityGrassBlade.material = material;
 
+const cube = MeshBuilder.CreateBox("cube", {size: 1}, scene);
+cube.position.y = 0.5;
+cube.isVisible = false;
+const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
+cube.material = cubeMaterial;
+
 /*const patchSize = 10;
 const patchResolution = patchSize * 5;
 const fieldRadius = 17;
@@ -97,37 +106,23 @@ const grassScatterer = new ThinInstanceScatterer(bladeMeshFromLod, fieldRadius, 
 const radius = 2;
 for(let x = -radius; x <= radius; x++) {
     for(let z = -radius; z <= radius; z++) {
-        const groundX = x * 20;
-        const groundZ = z * 20;
-        const ground = new TerrainChunk(20, 16, 50, Vector3.Up(), scene, (lx, lz) => {
-            const positionX = groundX + lx;
-            const positionZ = groundZ + lz;
+        const chunkPosition = new Vector3(x * 20, 0, z * 20);
+        const ground = new TerrainChunk(chunkPosition, 20, 16, 50, Vector3.Up(), scene, (lx, lz) => {
+            const positionX = chunkPosition.x + lx;
+            const positionZ = chunkPosition.z + lz;
             const height = Math.cos(positionX * 0.1) * Math.sin(positionZ * 0.1) * 3
             const nx = 0;
             const ny = 1;
             const nz = 0;
             return [height, nx, ny, nz];
         });
-        ground.mesh.position.x = groundX;
-        ground.mesh.position.z = groundZ;
 
-        const grassPatch = new ThinInstancePatch(new Vector3(groundX, 0, groundZ), ground.instancesMatrixBuffer);
+        const grassPatch = new ThinInstancePatch(chunkPosition, ground.instancesMatrixBuffer);
         grassPatch.createThinInstances(highQualityGrassBlade);
 
-        const cube = MeshBuilder.CreateBox("cube", {size: 1}, scene);
-        cube.position.y = 0.5;
-        cube.isVisible = false;
-        const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
-        cube.material = cubeMaterial;
-
         const stride = 781;
-        const cubeMatrixBuffer = new Float32Array(16 * Math.floor(ground.instancesMatrixBuffer.length / stride));
-        let instanceIndex = 0;
-        for (let i = 0; i < ground.instancesMatrixBuffer.length; i += 16 * stride) {
-            cubeMatrixBuffer.set(ground.instancesMatrixBuffer.subarray(i, i + 16), instanceIndex * 16);
-            instanceIndex++;
-        }
-        const cubePatch = new ThinInstancePatch(new Vector3(groundX, 0.5, groundZ), cubeMatrixBuffer);
+        const cubeMatrixBuffer = downSample(ground.instancesMatrixBuffer, stride);
+        const cubePatch = new ThinInstancePatch(chunkPosition, cubeMatrixBuffer);
         cubePatch.createThinInstances(cube);
     }
 }

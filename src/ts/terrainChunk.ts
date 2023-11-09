@@ -78,7 +78,7 @@ function getTransformationQuaternion(from: Vector3, to: Vector3): Quaternion {
     return Quaternion.RotationAxis(rotationAxis, angle);
 }
 
-function scatterInTriangle(n: number, instanceIndex: number, instancesMatrixBuffer: Float32Array, positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number, instanceUp: Vector3 | null) {
+function scatterInTriangle(chunkPosition: Vector3, n: number, instanceIndex: number, instancesMatrixBuffer: Float32Array, positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number, instanceUp: Vector3 | null) {
     for (let i = 0; i < n; i++) {
         const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
         const alignQuaternion = getTransformationQuaternion(Vector3.Up(), instanceUp ? instanceUp : new Vector3(nx, ny, nz));
@@ -86,7 +86,7 @@ function scatterInTriangle(n: number, instanceIndex: number, instancesMatrixBuff
         const matrix = Matrix.Compose(
             new Vector3(scaling, scaling, scaling),
             alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), Math.random() * 2 * Math.PI)),
-            new Vector3(x, y, z)
+            new Vector3(x, y, z).addInPlace(chunkPosition)
         );
 
         matrix.copyToArray(instancesMatrixBuffer, 16 * instanceIndex);
@@ -102,8 +102,10 @@ export class TerrainChunk {
     readonly material: StandardMaterial;
     readonly instancesMatrixBuffer: Float32Array;
 
-    constructor(size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, normalX: number, normalY: number, normalZ: number] = () => [0, 0, 1, 0]) {
+    constructor(chunkPosition: Vector3, size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, normalX: number, normalY: number, normalZ: number] = () => [0, 0, 1, 0]) {
         this.mesh = new Mesh("terrainPatch", scene);
+        this.mesh.position = chunkPosition;
+
         this.material = new StandardMaterial("terrainPatchMaterial", scene);
         this.material.diffuseColor.set(0.02, 0.1, 0.01);
         this.material.specularColor.scaleInPlace(0);
@@ -150,7 +152,7 @@ export class TerrainChunk {
                 const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
                 const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
                 excessInstanceNumber = (triangleArea1 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances1;
-                instanceIndex = scatterInTriangle(nbInstances1, instanceIndex, this.instancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1, instanceUp);
+                instanceIndex = scatterInTriangle(chunkPosition, nbInstances1, instanceIndex, this.instancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1, instanceUp);
                 if(instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
                 }
@@ -162,7 +164,7 @@ export class TerrainChunk {
                 const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
                 const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
                 excessInstanceNumber = (triangleArea2 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances2;
-                instanceIndex = scatterInTriangle(nbInstances2, instanceIndex, this.instancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1, instanceUp);
+                instanceIndex = scatterInTriangle(chunkPosition, nbInstances2, instanceIndex, this.instancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1, instanceUp);
                 if(instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
                 }

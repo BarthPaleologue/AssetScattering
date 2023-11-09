@@ -47,7 +47,6 @@ export class ThinInstancePatch {
         this.clearThinInstances();
         if(this.baseMesh !== null) this.baseMesh.dispose();
         this.baseMesh = baseMesh.clone();
-        this.baseMesh.position = this.position;
         this.baseMesh.makeGeometryUnique();
         this.baseMesh.isVisible = true;
         this.baseMesh.thinInstanceSetBuffer("matrix", this.matrixBuffer, 16);
