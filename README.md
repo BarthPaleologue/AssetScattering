@@ -5,15 +5,15 @@
 
 ![Screenshot](./cover.png)
 
-An asset scattering system built with BabylonJS.
+A procedural asset scattering system built with BabylonJS. It can render millions of blades of grass with LoD and cute butterflies.
 
 ## Online demo
 
-Grass field with scattered cubes and collisions on an infinite terrain: [https://barthpaleologue.github.io/AssetScattering/](https://barthpaleologue.github.io/AssetScattering/)
+Main demo with procedural terrain, lod, collisions, butterflies: [here](https://barthpaleologue.github.io/AssetScattering/)
 
-Large flat grass field: [https://barthpaleologue.github.io/AssetScattering/field.html](https://barthpaleologue.github.io/AssetScattering/field.html)
+Large flat grass field with lod and butterflied: [here](https://barthpaleologue.github.io/AssetScattering/field.html)
 
-Minimal example: [https://barthpaleologue.github.io/AssetScattering/minimal.html](https://barthpaleologue.github.io/AssetScattering/minimal.html)
+Minimal example of a dense patch of grass: [here](https://barthpaleologue.github.io/AssetScattering/minimal.html)
 
 ## How to use
 

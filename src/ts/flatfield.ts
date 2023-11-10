@@ -1,6 +1,5 @@
 import {Scene} from "@babylonjs/core/scene";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
-import {Texture} from "@babylonjs/core/Materials/Textures/texture";
 import "@babylonjs/core/Loading/loadingScreen";
 
 import {ActionManager, ExecuteCodeAction} from "@babylonjs/core/Actions";
@@ -13,7 +12,6 @@ import "../styles/index.scss";
 import {createGrassBlade} from "./grass/grassBlade";
 import {createGrassMaterial} from "./grass/grassMaterial";
 
-import perlinNoise from "../assets/perlin.png";
 import {createSkybox} from "./utils/skybox";
 import {UI} from "./utils/ui";
 import {createCharacterController} from "./utils/character";
@@ -30,7 +28,6 @@ import {Engine} from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
 import {PatchManager} from "./instancing/patchManager";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
 import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import HavokPhysics from "@babylonjs/havok";
@@ -80,16 +77,12 @@ scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyUpTr
 const character = await createCharacterController(scene, camera, inputMap);
 
 // Interesting part starts here
-const perlinTexture = new Texture(perlinNoise, scene);
-
 const highQualityGrassBlade = createGrassBlade(scene, 4);
 highQualityGrassBlade.isVisible = false;
 const lowQualityGrassBlade = createGrassBlade(scene, 1);
 lowQualityGrassBlade.isVisible = false;
 
-const material = createGrassMaterial(scene);
-material.setVector3("lightDirection", light.direction);
-material.setTexture("perlinNoise", perlinTexture);
+const material = createGrassMaterial(light, scene, character);
 highQualityGrassBlade.material = material;
 lowQualityGrassBlade.material = material;
 
@@ -118,8 +111,7 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 1;
 butterfly.isVisible = false;
 
-const butterflyMaterial = createButterflyMaterial(scene);
-butterflyMaterial.setVector3("lightDirection", light.direction);
+const butterflyMaterial = createButterflyMaterial(character, light, scene);
 butterfly.material = butterflyMaterial;
 
 const butterflyPatch = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100);
@@ -134,21 +126,8 @@ document.addEventListener("keypress", (e) => {
     }
 });
 
-let clock = 0;
-
 function updateScene() {
-    const deltaTime = engine.getDeltaTime() / 1000;
-    clock += deltaTime;
-
-    material.setVector3("playerPosition", character.position);
-    material.setVector3("cameraPosition", camera.position);
-    material.setFloat("time", clock);
-
-    butterflyMaterial.setVector3("playerPosition", character.position);
-    butterflyMaterial.setFloat("time", clock);
-
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${grassManager.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
-
     grassManager.update(camera.position);
 }
 
