@@ -1,9 +1,23 @@
 import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
 
 export function downSample(matrixBuffer: Float32Array, stride: number): Float32Array {
-    const downSampledBuffer = new Float32Array(16 * Math.floor(matrixBuffer.length / stride));
-    for (let i = 0; i < matrixBuffer.length; i += 16 * stride) {
-        downSampledBuffer.set(matrixBuffer.subarray(i, i + 16), i / stride);
+    const nbMatrices = Math.floor(matrixBuffer.length / 16);
+    const wantedNbMatrices = Math.floor(nbMatrices / stride);
+    const downSampledBuffer = new Float32Array(16 * wantedNbMatrices);
+    for (let i = 0; i < wantedNbMatrices; i++) {
+        const index = i * stride * 16;
+        downSampledBuffer.set(matrixBuffer.subarray(index, index + 16), i * 16);
+    }
+    return downSampledBuffer;
+}
+
+export function randomDownSample(matrixBuffer: Float32Array, stride: number): Float32Array {
+    const nbMatrices = Math.floor(matrixBuffer.length / 16);
+    const wantedNbMatrices = Math.floor(nbMatrices / stride);
+    const downSampledBuffer = new Float32Array(16 * wantedNbMatrices);
+    for (let i = 0; i < wantedNbMatrices; i++) {
+        const index = Math.floor(Math.random() * nbMatrices) * 16;
+        downSampledBuffer.set(matrixBuffer.subarray(index, index + 16), i * 16);
     }
     return downSampledBuffer;
 }
@@ -32,4 +46,24 @@ export function createSquareMatrixBuffer(position: Vector3, size: number, resolu
     }
 
     return matrixBuffer;
+}
+
+export function decomposeModelMatrix(matrix: Float32Array, position: Vector3, rotation: Quaternion, scaling: Vector3) {
+    position.set(matrix[12], matrix[13], matrix[14]);
+
+    const uniformScale = Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1] + matrix[2] * matrix[2]);
+    scaling.set(uniformScale, uniformScale, uniformScale);
+
+    /*const scaleX = Math.sqrt(matrix[0] * matrix[0] + matrix[1] * matrix[1] + matrix[2] * matrix[2]);
+    const scaleY = Math.sqrt(matrix[4] * matrix[4] + matrix[5] * matrix[5] + matrix[6] * matrix[6]);
+    const scaleZ = Math.sqrt(matrix[8] * matrix[8] + matrix[9] * matrix[9] + matrix[10] * matrix[10]);
+    scaling.set(scaleX, scaleY, scaleZ);*/
+
+    const rotationMatrix = Matrix.Identity();
+    rotationMatrix.setRowFromFloats(0, matrix[0] / uniformScale, matrix[1] / uniformScale, matrix[2] / uniformScale, 0);
+    rotationMatrix.setRowFromFloats(1, matrix[4] / uniformScale, matrix[5] / uniformScale, matrix[6] / uniformScale, 0);
+    rotationMatrix.setRowFromFloats(2, matrix[8] / uniformScale, matrix[9] / uniformScale, matrix[10] / uniformScale, 0);
+    rotationMatrix.setRowFromFloats(3, 0, 0, 0, 1);
+
+    rotation.copyFrom(Quaternion.FromRotationMatrix(rotationMatrix));
 }

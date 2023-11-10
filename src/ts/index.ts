@@ -6,7 +6,10 @@ import "@babylonjs/core/Loading/loadingScreen";
 import {ActionManager, ExecuteCodeAction} from "@babylonjs/core/Actions";
 
 import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
+
+import "@babylonjs/core/Misc/screenshotTools";
 import {Tools} from "@babylonjs/core/Misc/tools";
+
 import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import {DirectionalLight} from "@babylonjs/core/Lights/directionalLight";
 import {HemisphericLight} from "@babylonjs/core/Lights/hemisphericLight";
@@ -33,13 +36,11 @@ import {Engine} from "@babylonjs/core/Engines/engine";
 import "@babylonjs/core/Physics/physicsEngineComponent";
 import {PatchManager} from "./patchManager";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {downSample} from "./utils/matrixBuffer";
+import {downSample, randomDownSample} from "./utils/matrixBuffer";
 import {Terrain} from "./terrain/terrain";
 
 import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
-import {PhysicsShapeType} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
-import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
 import {IPatch} from "./iPatch";
 import {InstancePatch} from "./instancePatch";
 
@@ -76,7 +77,6 @@ camera.minZ = 0.1;
 camera.attachControl();
 
 const character = await createCharacterController(scene, camera, inputMap);
-character.position.x = 2;
 
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
@@ -115,11 +115,6 @@ const grassScatterer = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
 });
 const cubeScatterer = new PatchManager([cube]);
 
-/*const patchSize = 10;
-const patchResolution = patchSize * 5;
-const fieldRadius = 17;
-grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));*/
-
 const terrain = new Terrain(20, 16, (x, z) => {
     const heightMultiplier = 5;
     const frequency = 0.1;
@@ -139,7 +134,7 @@ for (let x = -radius; x <= radius; x++) {
         const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
         grassScatterer.addPatch(grassPatch);
 
-        const stride = 781;
+        const stride = 1000;
         const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
         const cubePatch = new InstancePatch(chunkPosition, cubeMatrixBuffer);
         cubeScatterer.addPatch(cubePatch);
@@ -148,6 +143,7 @@ for (let x = -radius; x <= radius; x++) {
 
 grassScatterer.initInstances();
 cubeScatterer.initInstances();
+
 
 const ui = new UI(scene);
 
@@ -169,8 +165,6 @@ function updateScene() {
     material.setFloat("time", clock);
 
     ui.setText(`${grassScatterer.getNbInstances().toLocaleString()} grass blades\n${cubeScatterer.getNbInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
-
-    //ui.setText(`${grassScatterer.getNbThinInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 
     grassScatterer.update(camera.position);
     cubeScatterer.update(camera.position);

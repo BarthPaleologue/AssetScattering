@@ -2,6 +2,7 @@ import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 import {IPatch} from "./iPatch";
+import {decomposeModelMatrix} from "./utils/matrixBuffer";
 
 export class InstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
@@ -18,11 +19,10 @@ export class InstancePatch implements IPatch {
         // decompose matrix buffer into position, rotation and scaling
         for(let i = 0; i < matrixBuffer.length; i += 16) {
             const matrixSubBuffer = matrixBuffer.subarray(i, i + 16);
-            const matrix = Matrix.FromArray(matrixSubBuffer);
             const position = Vector3.Zero();
             const rotation = Quaternion.Zero();
             const scaling = Vector3.Zero();
-            matrix.decompose(scaling, rotation, position);
+            decomposeModelMatrix(matrixSubBuffer, position, rotation, scaling);
 
             this.positions.push(position);
             this.rotations.push(rotation);
@@ -58,7 +58,7 @@ export class InstancePatch implements IPatch {
 
     public getNbInstances(): number {
         if(this.baseMesh === null) return 0;
-        return this.baseMesh.thinInstanceCount;
+        return this.baseMesh.instances.length;
     }
 
     public getPosition(): Vector3 {
