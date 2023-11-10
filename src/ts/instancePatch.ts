@@ -51,6 +51,8 @@ export class InstancePatch implements IPatch {
             instance.rotationQuaternion = this.rotations[i];
             instance.scaling.copyFrom(this.scalings[i]);
             this.instances.push(instance);
+
+            instance.showBoundingBox = true;
         }
     }
 
