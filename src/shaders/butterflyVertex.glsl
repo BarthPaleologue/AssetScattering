@@ -74,11 +74,13 @@ void main() {
 
     vec3 leaningNormal = rotateAround(normal, leanAxis, curveAmount);*/
 
-    vec3 flyPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), sign(position.z) * cos(5.0 * time));
-
     vec3 objectWorld = vec3(finalWorld[3].x, finalWorld[3].y, finalWorld[3].z);
-    objectWorld.y += 0.5 * sin(5.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0);
+    objectWorld.y += 0.1 * sin(5.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0);
+    objectWorld.y += 0.5 * sin(0.2 * time + objectWorld.x * 15.0 + objectWorld.z * 15.0);
     finalWorld[3].xyz = objectWorld;
+
+    vec3 flyPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), sign(position.z) * cos(10.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0));
+
 
     vec4 worldPosition = finalWorld * vec4(flyPosition, 1.0);
 

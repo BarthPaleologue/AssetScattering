@@ -119,8 +119,7 @@ groundMaterial.specularColor.scaleInPlace(0);
 ground.material = groundMaterial;
 
 const butterfly = createButterfly(scene);
-butterfly.position.y = 2;
-butterfly.position.x = 2;
+butterfly.position.y = 1;
 butterfly.isVisible = false;
 
 const butterflyMaterial = createButterflyMaterial(scene);
