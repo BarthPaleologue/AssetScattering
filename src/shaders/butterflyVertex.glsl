@@ -2,11 +2,12 @@ precision highp float;
 
 in vec3 position;
 in vec3 normal;
+in vec2 uv;
 
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform mat4 world;
+//uniform mat4 world;
 
 uniform vec3 cameraPosition;
 uniform vec3 playerPosition;
@@ -16,6 +17,7 @@ uniform float time;
 uniform sampler2D perlinNoise;
 
 out vec3 vPosition;
+out vec2 vUV;
 
 out mat4 normalMatrix;
 out vec3 vNormal;
@@ -36,8 +38,12 @@ float easeIn(float t, float alpha) {
 
 #pragma glslify: remap = require(./remap.glsl)
 
+#include<instancesDeclaration>
+
 void main() {
-    mat4 finalWorld = world;
+    #include<instancesVertex>
+
+    //mat4 finalWorld = world;
 
     // wind //world3.xyz;
     /*vec3 objectWorld = vec3(finalWorld[3].x, finalWorld[3].y, finalWorld[3].z);
@@ -71,7 +77,7 @@ void main() {
     vec3 flyPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), sign(position.z) * cos(5.0 * time));
 
     vec3 objectWorld = vec3(finalWorld[3].x, finalWorld[3].y, finalWorld[3].z);
-    objectWorld.y += 0.5 * sin(5.0 * time);
+    objectWorld.y += 0.5 * sin(5.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0);
     finalWorld[3].xyz = objectWorld;
 
     vec4 worldPosition = finalWorld * vec4(flyPosition, 1.0);
@@ -89,7 +95,8 @@ void main() {
     vec4 outPosition = projection * viewPosition;
     gl_Position = outPosition;
 
-    vPosition = position;
+    vPosition = flyPosition;
+    vUV = uv;
 
     normalMatrix = transpose(inverse(finalWorld));
 

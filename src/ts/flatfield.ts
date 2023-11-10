@@ -95,7 +95,7 @@ lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = patchSize * 5;
-const fieldRadius = 0;
+const fieldRadius = 17;
 
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
@@ -121,10 +121,14 @@ ground.material = groundMaterial;
 const butterfly = createButterfly(scene);
 butterfly.position.y = 2;
 butterfly.position.x = 2;
+butterfly.isVisible = false;
 
 const butterflyMaterial = createButterflyMaterial(scene);
 butterflyMaterial.setVector3("lightDirection", light.direction);
 butterfly.material = butterflyMaterial;
+
+const butterflyPatch = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100);
+butterflyPatch.createInstances(butterfly);
 
 const ui = new UI(scene);
 

@@ -4,13 +4,17 @@ uniform float time;
 
 uniform vec3 lightDirection;
 
+uniform sampler2D butterflyTexture;
+
 in vec3 vPosition;
+in vec2 vUV;
 
 in mat4 normalMatrix;
 in vec3 vNormal;
 
 void main() {
-    vec3 finalColor = vec3(1.0, 0.0, 0.0);
+    vec4 finalColor = texture(butterflyTexture, vUV);
+    if(finalColor.a < 0.1) discard;
 
     vec3 normalW = normalize((normalMatrix * vec4(vNormal, 0.0)).xyz);
 
@@ -21,5 +25,5 @@ void main() {
     // ambient lighting
     ndl = clamp(ndl + 0.1, 0.0, 1.0);
 
-    gl_FragColor = vec4(finalColor * ndl, 1.0);// apply color and lighting
+    gl_FragColor = vec4(finalColor.rgb * ndl, 1.0);// apply color and lighting
 } 

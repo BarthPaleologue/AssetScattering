@@ -5,6 +5,7 @@ import {Scene} from "@babylonjs/core/scene";
 export function createButterfly(scene: Scene) {
     const positions = new Float32Array(6 * 3);
     const indices = new Uint32Array(4 * 3);
+    const uvs = new Float32Array(6 * 2);
 
     // butter fly is made of 4 triangles (2 squares touching each other)
     // 0--1
@@ -53,13 +54,36 @@ export function createButterfly(scene: Scene) {
     indices[10] = 5;
     indices[11] = 4;
 
+    // uvs (0,0) is bottom left, (1,1) is top right
+    uvs[0] = 0;
+    uvs[1] = 0;
+
+    uvs[2] = 0;
+    uvs[3] = 1;
+
+    uvs[4] = 0.5;
+    uvs[5] = 0;
+
+    uvs[6] = 0.5;
+    uvs[7] = 1;
+
+    uvs[8] = 1;
+    uvs[9] = 0;
+
+    uvs[10] = 1;
+    uvs[11] = 1;
+
     const vertexData = new VertexData();
     vertexData.positions = positions;
     vertexData.indices = indices;
+    vertexData.uvs = uvs;
 
     const mesh = new Mesh("butterfly", scene);
     vertexData.applyToMesh(mesh);
     mesh.createNormals(false);
+
+    mesh.scaling.scaleInPlace(0.2);
+    mesh.bakeCurrentTransformIntoVertices();
 
     return mesh;
 }
