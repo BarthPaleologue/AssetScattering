@@ -4,8 +4,7 @@ in vec3 position;
 in vec3 normal;
 in vec2 uv;
 
-uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 viewProjection;
 
 //uniform mat4 world;
 
@@ -21,6 +20,8 @@ out vec2 vUV;
 
 out mat4 normalMatrix;
 out vec3 vNormal;
+
+out vec3 vOriginalWorldPosition;
 
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 vec3 rotateAround(vec3 vector, vec3 axis, float theta) {
@@ -75,26 +76,19 @@ void main() {
     vec3 leaningNormal = rotateAround(normal, leanAxis, curveAmount);*/
 
     vec3 objectWorld = vec3(finalWorld[3].x, finalWorld[3].y, finalWorld[3].z);
+    vOriginalWorldPosition = objectWorld;
+
+    // high frequency movement for wing flap
     objectWorld.y += 0.1 * sin(5.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0);
+    // low frequency movement of larger amplitude for general movement
     objectWorld.y += 0.5 * sin(0.2 * time + objectWorld.x * 15.0 + objectWorld.z * 15.0);
-    finalWorld[3].xyz = objectWorld;
+
 
     vec3 flyPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), sign(position.z) * cos(10.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0));
 
+    finalWorld[3].xyz = objectWorld;
 
-    vec4 worldPosition = finalWorld * vec4(flyPosition, 1.0);
-
-
-    //vec3 viewDir = normalize(cameraPosition - worldPosition);
-    //float viewDotNormal = abs(dot(viewDir, leaningNormal));
-    //float viewSpaceThickenFactor = easeOut(1.0 - viewDotNormal, 4.0);
-
-    //viewSpaceThickenFactor *= smoothstep(0.0, 0.2, viewDotNormal);
-
-    vec4 viewPosition = view * worldPosition;
-    //viewPosition.x += viewSpaceThickenFactor * leaningNormal.y;
-
-    vec4 outPosition = projection * viewPosition;
+    vec4 outPosition = viewProjection * finalWorld * vec4(flyPosition, 1.0);
     gl_Position = outPosition;
 
     vPosition = flyPosition;
