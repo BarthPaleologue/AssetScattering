@@ -22,7 +22,7 @@ import perlinNoise from "../assets/perlin.png";
 import {createSkybox} from "./utils/skybox";
 import {UI} from "./utils/ui";
 import {createCharacterController} from "./utils/character";
-import {ThinInstancePatch} from "./thinInstancePatch";
+import {ThinInstancePatch} from "./instancing/thinInstancePatch";
 import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import windSound from "../assets/wind.mp3";
@@ -34,15 +34,15 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {Engine} from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {PatchManager} from "./patchManager";
+import {PatchManager} from "./instancing/patchManager";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {downSample, randomDownSample} from "./utils/matrixBuffer";
 import {Terrain} from "./terrain/terrain";
 
 import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
-import {IPatch} from "./iPatch";
-import {InstancePatch} from "./instancePatch";
+import {IPatch} from "./instancing/iPatch";
+import {InstancePatch} from "./instancing/instancePatch";
 import {TerrainChunk} from "./terrain/terrainChunk";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
@@ -110,11 +110,11 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
+const grassManager = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
     const distance = Vector3.Distance(patch.getPosition(), camera.position);
     return distance < terrainChunkSize * 3 ? 1 : 0;
 });
-const cubeScatterer = new PatchManager([cube]);
+const cubeManager = new PatchManager([cube]);
 
 const terrain = new Terrain(20, 16, 50, (x, z) => {
     const heightMultiplier = 5;
@@ -127,27 +127,27 @@ const terrain = new Terrain(20, 16, 50, (x, z) => {
 }, scene);
 terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const grassPatch = new ThinInstancePatch(chunk.mesh.position, chunk.instancesMatrixBuffer);
-    grassScatterer.addPatch(grassPatch);
+    grassManager.addPatch(grassPatch);
 
     const stride = 2000;
     const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
     const cubePatch = new InstancePatch(chunk.mesh.position, cubeMatrixBuffer);
-    cubeScatterer.addPatch(cubePatch);
+    cubeManager.addPatch(cubePatch);
 
     chunk.onDisposeObservable.add(() => {
         grassPatch.dispose();
         cubePatch.dispose();
 
-        grassScatterer.removePatch(grassPatch);
-        cubeScatterer.removePatch(cubePatch);
+        grassManager.removePatch(grassPatch);
+        cubeManager.removePatch(cubePatch);
     });
 });
 
 const renderDistance = 6;
 terrain.init(character.position, renderDistance);
 
-grassScatterer.initInstances();
-cubeScatterer.initInstances();
+grassManager.initInstances();
+cubeManager.initInstances();
 
 
 const ui = new UI(scene);
@@ -169,10 +169,10 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    ui.setText(`${grassScatterer.getNbInstances().toLocaleString()} grass blades\n${cubeScatterer.getNbInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${cubeManager.getNbInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
 
-    grassScatterer.update(camera.position);
-    cubeScatterer.update(camera.position);
+    grassManager.update(camera.position);
+    cubeManager.update(camera.position);
 
     // do not update terrain every frame to prevent lag spikes
     if(terrainUpdateCounter % 30 === 0) {

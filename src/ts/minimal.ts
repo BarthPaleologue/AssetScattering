@@ -10,7 +10,7 @@ import {createGrassBlade} from "./grass/grassBlade";
 import {createGrassMaterial} from "./grass/grassMaterial";
 
 import perlinNoise from "../assets/perlin.png";
-import {ThinInstancePatch} from "./thinInstancePatch";
+import {ThinInstancePatch} from "./instancing/thinInstancePatch";
 import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
 import {Engine} from "@babylonjs/core/Engines/engine";
 

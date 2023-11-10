@@ -17,7 +17,7 @@ import perlinNoise from "../assets/perlin.png";
 import {createSkybox} from "./utils/skybox";
 import {UI} from "./utils/ui";
 import {createCharacterController} from "./utils/character";
-import {ThinInstancePatch} from "./thinInstancePatch";
+import {ThinInstancePatch} from "./instancing/thinInstancePatch";
 import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import windSound from "../assets/wind.mp3";
@@ -29,13 +29,13 @@ import {Sound} from "@babylonjs/core/Audio/sound";
 import {Engine} from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {PatchManager} from "./patchManager";
+import {PatchManager} from "./instancing/patchManager";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
 import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
-import {IPatch} from "./iPatch";
+import {IPatch} from "./instancing/iPatch";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
@@ -99,13 +99,13 @@ const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
 bladeMeshFromLod[1] = highQualityGrassBlade;
 
-const grassScatterer = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
+const grassManager = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
     const distance = Vector3.Distance(patch.getPosition(), camera.position);
     return distance < patchSize * 3 ? 1 : 0;
 });
 
-grassScatterer.addPatches(PatchManager.circleInit(fieldRadius, patchSize, patchResolution));
-grassScatterer.initInstances();
+grassManager.addPatches(PatchManager.circleInit(fieldRadius, patchSize, patchResolution));
+grassManager.initInstances();
 
 const ground = MeshBuilder.CreateGround("ground", {
     width: patchSize * fieldRadius * 2,
@@ -135,9 +135,9 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
-    ui.setText(`${grassScatterer.getNbInstances().toLocaleString()} grass blades\n${grassScatterer.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${grassManager.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 
-    grassScatterer.update(camera.position);
+    grassManager.update(camera.position);
 }
 
 scene.executeWhenReady(() => {

@@ -1,7 +1,7 @@
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {Vector3} from "@babylonjs/core/Maths/math.vector";
 import {ThinInstancePatch} from "./thinInstancePatch";
-import {createSquareMatrixBuffer} from "./utils/matrixBuffer";
+import {createSquareMatrixBuffer} from "../utils/matrixBuffer";
 import {IPatch} from "./iPatch";
 
 export class PatchManager {
