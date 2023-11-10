@@ -97,11 +97,7 @@ const patchSize = 10;
 const patchResolution = patchSize * 5;
 const fieldRadius = 17;
 
-const bladeMeshFromLod = new Array<Mesh>(2);
-bladeMeshFromLod[0] = lowQualityGrassBlade;
-bladeMeshFromLod[1] = highQualityGrassBlade;
-
-const grassManager = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
+const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBlade], (patch: IPatch) => {
     const distance = Vector3.Distance(patch.getPosition(), camera.position);
     return distance < patchSize * 3 ? 1 : 0;
 });

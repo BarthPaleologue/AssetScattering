@@ -44,6 +44,8 @@ import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {IPatch} from "./instancing/iPatch";
 import {InstancePatch} from "./instancing/instancePatch";
 import {TerrainChunk} from "./terrain/terrainChunk";
+import {createButterfly} from "./utils/butterfly";
+import {createButterflyMaterial} from "./utils/butterflyMaterial";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -104,17 +106,22 @@ const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
 cube.material = cubeMaterial;
 cube.checkCollisions = true;
 
+const butterfly = createButterfly(scene);
+butterfly.position.y = 1;
+butterfly.isVisible = false;
+
+const butterflyMaterial = createButterflyMaterial(scene);
+butterflyMaterial.setVector3("lightDirection", light.direction);
+butterfly.material = butterflyMaterial;
+
 const terrainChunkSize = 20;
 
-const bladeMeshFromLod = new Array<Mesh>(2);
-bladeMeshFromLod[0] = lowQualityGrassBlade;
-bladeMeshFromLod[1] = highQualityGrassBlade;
-
-const grassManager = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
+const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBlade], (patch: IPatch) => {
     const distance = Vector3.Distance(patch.getPosition(), camera.position);
     return distance < terrainChunkSize * 3 ? 1 : 0;
 });
 const cubeManager = new PatchManager([cube]);
+const butterflyManager = new PatchManager([butterfly]);
 
 const terrain = new Terrain(20, 16, 50, (x, z) => {
     const heightMultiplier = 5;
@@ -134,12 +141,19 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const cubePatch = new InstancePatch(chunk.mesh.position, cubeMatrixBuffer);
     cubeManager.addPatch(cubePatch);
 
+    const stride2 = 1000;
+    const butterflyMatrixBuffer = randomDownSample(chunk.alignedInstancesMatrixBuffer, stride2);
+    const butterflyPatch = new ThinInstancePatch(chunk.mesh.position, butterflyMatrixBuffer);
+    butterflyManager.addPatch(butterflyPatch);
+
     chunk.onDisposeObservable.add(() => {
         grassPatch.dispose();
         cubePatch.dispose();
+        butterflyPatch.dispose();
 
         grassManager.removePatch(grassPatch);
         cubeManager.removePatch(cubePatch);
+        butterflyManager.removePatch(butterflyPatch);
     });
 });
 
@@ -173,6 +187,10 @@ function updateScene() {
 
     grassManager.update(camera.position);
     cubeManager.update(camera.position);
+    butterflyManager.update(camera.position);
+
+    butterflyMaterial.setVector3("playerPosition", character.position);
+    butterflyMaterial.setFloat("time", clock);
 
     // do not update terrain every frame to prevent lag spikes
     if(terrainUpdateCounter % 30 === 0) {
