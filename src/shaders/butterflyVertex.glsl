@@ -83,8 +83,15 @@ void main() {
     // low frequency movement of larger amplitude for general movement
     objectWorld.y += 0.5 * sin(0.2 * time + objectWorld.x * 15.0 + objectWorld.z * 15.0);
 
+    vec3 butterflyForward = vec3(1.0, 0.0, 0.0);
 
-    vec3 flyPosition = rotateAround(position, vec3(1.0, 0.0, 0.0), sign(position.z) * cos(10.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0));
+    float rotationY = sin(0.5 * time + vOriginalWorldPosition.x * 10.0 + vOriginalWorldPosition.z * 10.0) * 3.14;
+    vec3 rotatedPosition = rotateAround(position, vec3(0.0, 1.0, 0.0), rotationY);
+    butterflyForward = rotateAround(butterflyForward, vec3(0.0, 1.0, 0.0), rotationY);
+
+    vec3 flyPosition = rotateAround(rotatedPosition, butterflyForward, sign(position.z) * cos(10.0 * time + objectWorld.x * 10.0 + objectWorld.z * 10.0));
+
+    objectWorld += butterflyForward * 0.5 * sin(0.5 * time + vOriginalWorldPosition.x * 10.0 + vOriginalWorldPosition.z * 10.0);
 
     finalWorld[3].xyz = objectWorld;
 
