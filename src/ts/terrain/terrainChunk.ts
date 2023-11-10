@@ -3,8 +3,9 @@ import {Scene} from "@babylonjs/core/scene";
 import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData";
 import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
-import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
-import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
+import {PhysicsShapeType} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import {Observable} from "@babylonjs/core/Misc/observable";
 
 function triangleArea(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number, x3: number, y3: number, z3: number) {
     // use cross product to calculate area of triangle
@@ -114,6 +115,10 @@ export class TerrainChunk {
     readonly instancesMatrixBuffer: Float32Array;
     readonly alignedInstancesMatrixBuffer: Float32Array;
 
+    private readonly aggregate: PhysicsAggregate;
+
+    readonly onDisposeObservable = new Observable<TerrainChunk>();
+
     constructor(chunkPosition: Vector3, size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number] = () => [0, 0, 0]) {
         this.mesh = new Mesh("terrainPatch", scene);
         this.mesh.position = chunkPosition;
@@ -199,6 +204,12 @@ export class TerrainChunk {
 
         vertexData.applyToMesh(this.mesh);
 
-        const aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
+        this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, {mass: 0}, scene);
+    }
+
+    dispose() {
+        this.aggregate.dispose();
+        this.mesh.dispose();
+        this.onDisposeObservable.notifyObservers(this);
     }
 }

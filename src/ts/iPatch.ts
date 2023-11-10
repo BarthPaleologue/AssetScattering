@@ -6,4 +6,5 @@ export interface IPatch {
     createInstances(baseMesh: Mesh): void;
     getNbInstances(): number;
     getPosition(): Vector3;
+    dispose(): void;
 }

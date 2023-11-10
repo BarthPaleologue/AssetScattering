@@ -23,7 +23,7 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
     cameraAttachPoint.position = new Vector3(0, 1.5, 0);
 
     camera.lockedTarget = cameraAttachPoint;
-    camera.wheelPrecision = 30;
+    camera.wheelPrecision = 200;
     camera.lowerRadiusLimit = 3;
     camera.upperBetaLimit = 3.14 / 2;
 

@@ -22,11 +22,12 @@ export class ThinInstancePatch implements IPatch {
     public clearInstances(): void {
         if(this.baseMesh === null) return;
         this.baseMesh.thinInstanceCount = 0;
+        this.baseMesh.dispose();
+        this.baseMesh = null;
     }
 
     public createInstances(baseMesh: Mesh): void {
         this.clearInstances();
-        if(this.baseMesh !== null) this.baseMesh.dispose();
         this.baseMesh = baseMesh.clone();
         this.baseMesh.makeGeometryUnique();
         this.baseMesh.isVisible = true;
@@ -40,5 +41,10 @@ export class ThinInstancePatch implements IPatch {
 
     public getPosition(): Vector3 {
         return this.position;
+    }
+
+    public dispose() {
+        this.clearInstances();
+        if(this.baseMesh !== null) this.baseMesh.dispose();
     }
 }

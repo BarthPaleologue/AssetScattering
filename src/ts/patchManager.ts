@@ -9,7 +9,7 @@ export class PatchManager {
     private readonly nbVertexFromLod: number[];
     private readonly patches: [IPatch, number][] = [];
 
-    private lodUpdateCadence = 1;
+    private patchUpdateRate = 1;
 
     private readonly computeLodLevel: (patch: IPatch) => number
     private readonly queue: Array<{ newLOD: number, patch: IPatch }> = [];
@@ -32,6 +32,16 @@ export class PatchManager {
         }
     }
 
+    public removePatch(patch: IPatch) {
+        const index = this.patches.findIndex((p) => p[0] === patch);
+        if(index === -1) return;
+        this.patches.splice(index, 1);
+
+        const queueIndex = this.queue.findIndex((p) => p.patch === patch);
+        if(queueIndex === -1) return;
+        this.queue.splice(queueIndex, 1);
+    }
+
     public static circleInit(radius: number, patchSize: number, patchResolution: number): ThinInstancePatch[] {
         const patches: ThinInstancePatch[] = [];
         for (let x = -radius; x <= radius; x++) {
@@ -52,6 +62,7 @@ export class PatchManager {
 
     public update(playerPosition: Vector3) {
         if(this.meshesFromLod.length > 1) this.updateLOD();
+        else this.updateQueue(this.patchUpdateRate);
     }
 
     private updateLOD() {
@@ -64,7 +75,7 @@ export class PatchManager {
             this.patches[i] = [patch, newLod];
         }
 
-        this.updateQueue(this.lodUpdateCadence);
+        this.updateQueue(this.patchUpdateRate);
     }
 
     private updateQueue(n: number) {
@@ -81,7 +92,7 @@ export class PatchManager {
     }
 
     public setLodUpdateCadence(cadence: number) {
-        this.lodUpdateCadence = cadence;
+        this.patchUpdateRate = cadence;
     }
 
     public getNbInstances() {

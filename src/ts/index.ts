@@ -43,6 +43,7 @@ import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {IPatch} from "./iPatch";
 import {InstancePatch} from "./instancePatch";
+import {TerrainChunk} from "./terrain/terrainChunk";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -115,7 +116,7 @@ const grassScatterer = new PatchManager(bladeMeshFromLod, (patch: IPatch) => {
 });
 const cubeScatterer = new PatchManager([cube]);
 
-const terrain = new Terrain(20, 16, (x, z) => {
+const terrain = new Terrain(20, 16, 50, (x, z) => {
     const heightMultiplier = 5;
     const frequency = 0.1;
     const height = Math.cos(x * frequency) * Math.sin(z * frequency) * heightMultiplier;
@@ -124,22 +125,26 @@ const terrain = new Terrain(20, 16, (x, z) => {
 
     return [height, gradX, gradZ];
 }, scene);
+terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
+    const grassPatch = new ThinInstancePatch(chunk.mesh.position, chunk.instancesMatrixBuffer);
+    grassScatterer.addPatch(grassPatch);
 
-const radius = 2;
-for (let x = -radius; x <= radius; x++) {
-    for (let z = -radius; z <= radius; z++) {
-        const chunkPosition = new Vector3(x * 20, 0, z * 20);
-        const chunk = terrain.createChunk(chunkPosition, 50);
+    const stride = 2000;
+    const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
+    const cubePatch = new InstancePatch(chunk.mesh.position, cubeMatrixBuffer);
+    cubeScatterer.addPatch(cubePatch);
 
-        const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
-        grassScatterer.addPatch(grassPatch);
+    chunk.onDisposeObservable.add(() => {
+        grassPatch.dispose();
+        cubePatch.dispose();
 
-        const stride = 1000;
-        const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
-        const cubePatch = new InstancePatch(chunkPosition, cubeMatrixBuffer);
-        cubeScatterer.addPatch(cubePatch);
-    }
-}
+        grassScatterer.removePatch(grassPatch);
+        cubeScatterer.removePatch(cubePatch);
+    });
+});
+
+const renderDistance = 6;
+terrain.init(character.position, renderDistance);
 
 grassScatterer.initInstances();
 cubeScatterer.initInstances();
@@ -155,10 +160,10 @@ document.addEventListener("keypress", (e) => {
 });
 
 let clock = 0;
-
+let terrainUpdateCounter = 0;
 function updateScene() {
-    const deltaTime = engine.getDeltaTime() / 1000;
-    clock += deltaTime;
+    clock += engine.getDeltaTime() / 1000;
+    terrainUpdateCounter++;
 
     material.setVector3("playerPosition", character.position);
     material.setVector3("cameraPosition", camera.position);
@@ -168,6 +173,12 @@ function updateScene() {
 
     grassScatterer.update(camera.position);
     cubeScatterer.update(camera.position);
+
+    // do not update terrain every frame to prevent lag spikes
+    if(terrainUpdateCounter % 30 === 0) {
+        terrain.update(character.position, renderDistance, 1);
+        terrainUpdateCounter = 0;
+    }
 }
 
 scene.executeWhenReady(() => {

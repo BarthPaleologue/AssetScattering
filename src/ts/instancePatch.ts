@@ -1,8 +1,8 @@
-import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
+import {Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
 import {Mesh} from "@babylonjs/core/Meshes/mesh";
 import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 import {IPatch} from "./iPatch";
-import {decomposeModelMatrix} from "./utils/matrixBuffer";
+import {createSquareMatrixBuffer, decomposeModelMatrix} from "./utils/matrixBuffer";
 
 export class InstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
@@ -36,11 +36,17 @@ export class InstancePatch implements IPatch {
             instance.dispose();
         }
         this.instances.length = 0;
+        this.baseMesh.dispose();
+        this.baseMesh = null;
+    }
+
+    public static CreateSquare(position: Vector3, size: number, resolution: number) {
+        const buffer = createSquareMatrixBuffer(position, size, resolution);
+        return new InstancePatch(position, buffer);
     }
 
     public createInstances(baseMesh: Mesh): void {
         this.clearInstances();
-        if(this.baseMesh !== null) this.baseMesh.dispose();
         this.baseMesh = baseMesh.clone();
         this.baseMesh.makeGeometryUnique();
         this.baseMesh.isVisible = false;
@@ -63,5 +69,10 @@ export class InstancePatch implements IPatch {
 
     public getPosition(): Vector3 {
         return this.position;
+    }
+
+    public dispose() {
+        this.clearInstances();
+        if(this.baseMesh !== null) this.baseMesh.dispose();
     }
 }
