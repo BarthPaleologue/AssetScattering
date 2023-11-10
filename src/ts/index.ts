@@ -41,8 +41,9 @@ import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {IPatch} from "./instancing/iPatch";
 import {InstancePatch} from "./instancing/instancePatch";
 import {TerrainChunk} from "./terrain/terrainChunk";
-import {createButterfly} from "./utils/butterfly";
-import {createButterflyMaterial} from "./utils/butterflyMaterial";
+import {createButterfly} from "./butterfly/butterfly";
+import {createButterflyMaterial} from "./butterfly/butterflyMaterial";
+import {createTree} from "./utils/tree";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -55,7 +56,7 @@ const havokInstance = await HavokPhysics();
 const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
-scene.useRightHandedSystem = true;
+//scene.useRightHandedSystem = true;
 scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
 
 const inputMap: Map<string, boolean> = new Map<string, boolean>();
@@ -106,6 +107,10 @@ butterfly.isVisible = false;
 const butterflyMaterial = createButterflyMaterial(character, light, scene);
 butterfly.material = butterflyMaterial;
 
+const tree = await createTree(scene);
+tree.scaling.scaleInPlace(3);
+tree.bakeCurrentTransformIntoVertices();
+
 const terrainChunkSize = 20;
 
 const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBlade], (patch: IPatch) => {
@@ -114,6 +119,7 @@ const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBla
 });
 const cubeManager = new PatchManager([cube]);
 const butterflyManager = new PatchManager([butterfly]);
+const treeManager = new PatchManager([tree]);
 
 const terrain = new Terrain(20, 16, 50, (x, z) => {
     const heightMultiplier = 5;
@@ -138,14 +144,21 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const butterflyPatch = new ThinInstancePatch(chunk.mesh.position, butterflyMatrixBuffer);
     butterflyManager.addPatch(butterflyPatch);
 
+    const stride3 = 20000;
+    const treeMatrixBuffer = randomDownSample(chunk.alignedInstancesMatrixBuffer, stride3);
+    const treePatch = new InstancePatch(chunk.mesh.position, treeMatrixBuffer);
+    treeManager.addPatch(treePatch);
+
     chunk.onDisposeObservable.add(() => {
         grassPatch.dispose();
         cubePatch.dispose();
         butterflyPatch.dispose();
+        treePatch.dispose();
 
         grassManager.removePatch(grassPatch);
         cubeManager.removePatch(cubePatch);
         butterflyManager.removePatch(butterflyPatch);
+        treeManager.removePatch(treePatch);
     });
 });
 
@@ -155,6 +168,7 @@ terrain.init(character.position, renderDistance);
 grassManager.initInstances();
 cubeManager.initInstances();
 butterflyManager.initInstances();
+treeManager.initInstances();
 
 const ui = new UI(scene);
 
@@ -174,6 +188,7 @@ function updateScene() {
     grassManager.update(camera.position);
     cubeManager.update(camera.position);
     butterflyManager.update(camera.position);
+    treeManager.update(camera.position);
 
     // do not update terrain every frame to prevent lag spikes
     if (terrainUpdateCounter % 30 === 0) {

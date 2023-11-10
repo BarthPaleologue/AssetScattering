@@ -62,7 +62,7 @@ const config = {
                 use: [MiniCssExtractPlugin.loader, "css-loader", "sass-loader"]
             },
             {
-                test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif|glb|obj|mp3)$/i,
+                test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif|glb|obj|mp3|babylon|tga)$/i,
                 type: "asset"
             },
             {

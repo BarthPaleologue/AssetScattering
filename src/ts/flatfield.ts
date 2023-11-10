@@ -33,8 +33,8 @@ import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {IPatch} from "./instancing/iPatch";
-import {createButterfly} from "./utils/butterfly";
-import {createButterflyMaterial} from "./utils/butterflyMaterial";
+import {createButterfly} from "./butterfly/butterfly";
+import {createButterflyMaterial} from "./butterfly/butterflyMaterial";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
