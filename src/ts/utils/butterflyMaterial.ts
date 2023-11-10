@@ -14,9 +14,9 @@ export function createButterflyMaterial(scene: Scene) {
 
     const butterflyMaterial = new ShaderMaterial(shaderName, scene, shaderName, {
         attributes: ["position", "normal", "uv"],
-        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "viewProjection", "time", "lightDirection", "cameraPosition", "playerPosition"],
+        uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "viewProjection", "time", "lightDirection", "playerPosition"],
         defines: ["#define INSTANCES"],
-        samplers: ["perlinNoise", "butterflyTexture"],
+        samplers: ["butterflyTexture"],
     });
 
     butterflyMaterial.setTexture("butterflyTexture", new Texture(butterflyTexture, scene));

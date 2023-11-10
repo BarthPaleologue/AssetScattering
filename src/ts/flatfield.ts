@@ -148,6 +148,7 @@ function updateScene() {
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
 
+    butterflyMaterial.setVector3("playerPosition", character.position);
     butterflyMaterial.setFloat("time", clock);
 
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${grassManager.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
