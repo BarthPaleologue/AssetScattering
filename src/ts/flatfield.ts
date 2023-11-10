@@ -36,6 +36,7 @@ import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
 import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {IPatch} from "./instancing/iPatch";
+import {createButterfly} from "./utils/butterfly";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
@@ -115,6 +116,16 @@ const groundMaterial = new StandardMaterial("groundMaterial", scene);
 groundMaterial.diffuseColor.set(0.02, 0.1, 0.01);
 groundMaterial.specularColor.scaleInPlace(0);
 ground.material = groundMaterial;
+
+const butterfly = createButterfly(scene);
+butterfly.position.y = 2;
+butterfly.position.x = 2;
+
+const butterflyMaterial = new StandardMaterial("butterflyMaterial", scene);
+butterflyMaterial.emissiveColor.set(0.5, 0.5, 0.5);
+butterflyMaterial.specularColor.scaleInPlace(0);
+butterflyMaterial.wireframe = true;
+butterfly.material = butterflyMaterial;
 
 const ui = new UI(scene);
 
