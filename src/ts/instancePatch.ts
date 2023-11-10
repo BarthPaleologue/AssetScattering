@@ -52,7 +52,7 @@ export class InstancePatch implements IPatch {
             instance.scaling.copyFrom(this.scalings[i]);
             this.instances.push(instance);
 
-            instance.showBoundingBox = true;
+            instance.checkCollisions = baseMesh.checkCollisions;
         }
     }
 

@@ -105,14 +105,13 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
             }
         }
 
+        // downward raycast
         const start = hero.position.add(Vector3.Up().scale(50));
         const end = hero.position.add(Vector3.Down().scale(50));
         (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
-
         if (raycastResult.hasHit) {
             hero.position.y = raycastResult.hitPointWorld.y + 0.01;
         }
-
     });
 
     return hero;

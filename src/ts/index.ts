@@ -43,8 +43,6 @@ import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
 import {IPatch} from "./iPatch";
 import {InstancePatch} from "./instancePatch";
 
-import "@babylonjs/core";
-
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
@@ -78,11 +76,7 @@ camera.minZ = 0.1;
 camera.attachControl();
 
 const character = await createCharacterController(scene, camera, inputMap);
-
-const characterCollider = MeshBuilder.CreateCapsule("characterCollider", {radius: 0.5, height: 1.8}, scene);
-character.addChild(characterCollider);
-characterCollider.showBoundingBox = true;
-characterCollider.position.y = 0.9;
+character.position.x = 2;
 
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
@@ -104,9 +98,10 @@ lowQualityGrassBlade.material = material;
 
 const cube = MeshBuilder.CreateBox("cube", {size: 1}, scene);
 cube.position.y = 0.5;
-cube.isVisible = false;
+cube.setEnabled(false);
 const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
 cube.material = cubeMaterial;
+cube.checkCollisions = true;
 
 const terrainChunkSize = 20;
 
@@ -126,7 +121,7 @@ const fieldRadius = 17;
 grassScatterer.addPatches(ThinInstanceScatterer.circleInit(fieldRadius, patchSize, patchResolution));*/
 
 const terrain = new Terrain(20, 16, (x, z) => {
-    const heightMultiplier = 5 * 0;
+    const heightMultiplier = 5;
     const frequency = 0.1;
     const height = Math.cos(x * frequency) * Math.sin(z * frequency) * heightMultiplier;
     const gradX = -Math.sin(x * frequency) * Math.sin(z * frequency) * frequency * heightMultiplier;
@@ -135,40 +130,19 @@ const terrain = new Terrain(20, 16, (x, z) => {
     return [height, gradX, gradZ];
 }, scene);
 
-const radius = 0;
+const radius = 2;
 for (let x = -radius; x <= radius; x++) {
     for (let z = -radius; z <= radius; z++) {
         const chunkPosition = new Vector3(x * 20, 0, z * 20);
         const chunk = terrain.createChunk(chunkPosition, 50);
 
-        //const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
-        //grassScatterer.addPatch(grassPatch);
+        const grassPatch = new ThinInstancePatch(chunkPosition, chunk.instancesMatrixBuffer);
+        grassScatterer.addPatch(grassPatch);
 
         const stride = 781;
         const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
         const cubePatch = new InstancePatch(chunkPosition, cubeMatrixBuffer);
         cubeScatterer.addPatch(cubePatch);
-
-        /*scene.onBeforeRenderObservable.add(() => {
-            for (const instance of cubePatch.instances) {
-                console.log(instance.getBoundingInfo());
-                instance.showBoundingBox = true;
-            }
-        });*/
-
-        scene.onBeforeRenderObservable.add(() => {
-           for(const instance of cubePatch.instances) {
-               if(instance.getBoundingInfo().intersects(characterCollider.getBoundingInfo(), true)) {
-                   console.log('Intersecting');
-               }
-           }
-        });
-
-        /*scene.onBeforeRenderObservable.add(() => {
-            if(cubePatch.getMesh().getBoundingInfo().intersects(character.getBoundingInfo(), true)) {
-                console.log("collision");
-            }
-        });*/
     }
 }
 
