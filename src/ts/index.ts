@@ -154,7 +154,7 @@ terrain.init(character.position, renderDistance);
 
 grassManager.initInstances();
 cubeManager.initInstances();
-
+butterflyManager.initInstances();
 
 const ui = new UI(scene);
 
