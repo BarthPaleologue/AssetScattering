@@ -37,6 +37,7 @@ import HavokPhysics from "@babylonjs/havok";
 import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import {IPatch} from "./instancing/iPatch";
 import {createButterfly} from "./utils/butterfly";
+import {createButterflyMaterial} from "./utils/butterflyMaterial";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
@@ -94,7 +95,7 @@ lowQualityGrassBlade.material = material;
 
 const patchSize = 10;
 const patchResolution = patchSize * 5;
-const fieldRadius = 17;
+const fieldRadius = 0;
 
 const bladeMeshFromLod = new Array<Mesh>(2);
 bladeMeshFromLod[0] = lowQualityGrassBlade;
@@ -121,10 +122,8 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 2;
 butterfly.position.x = 2;
 
-const butterflyMaterial = new StandardMaterial("butterflyMaterial", scene);
-butterflyMaterial.emissiveColor.set(0.5, 0.5, 0.5);
-butterflyMaterial.specularColor.scaleInPlace(0);
-butterflyMaterial.wireframe = true;
+const butterflyMaterial = createButterflyMaterial(scene);
+butterflyMaterial.setVector3("lightDirection", light.direction);
 butterfly.material = butterflyMaterial;
 
 const ui = new UI(scene);
@@ -145,6 +144,8 @@ function updateScene() {
     material.setVector3("playerPosition", character.position);
     material.setVector3("cameraPosition", camera.position);
     material.setFloat("time", clock);
+
+    butterflyMaterial.setFloat("time", clock);
 
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${grassManager.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
 

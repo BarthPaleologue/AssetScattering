@@ -10,7 +10,7 @@ export function createGrassMaterial(scene: Scene) {
     Effect.ShadersStore[`${shaderName}FragmentShader`] = grassFragment;
     Effect.ShadersStore[`${shaderName}VertexShader`] = grassVertex;
 
-    const grassMaterial = new ShaderMaterial("grassMaterial", scene, shaderName, {
+    const grassMaterial = new ShaderMaterial(shaderName, scene, shaderName, {
         attributes: ["position", "normal"],
         uniforms: ["world", "worldView", "worldViewProjection", "view", "projection", "viewProjection", "time", "lightDirection", "cameraPosition", "playerPosition"],
         defines: ["#define INSTANCES"],
