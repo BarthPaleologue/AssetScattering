@@ -56,7 +56,6 @@ const havokInstance = await HavokPhysics();
 const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
-//scene.useRightHandedSystem = true;
 scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
 
 const inputMap: Map<string, boolean> = new Map<string, boolean>();
@@ -73,7 +72,7 @@ new Sound("wind", windSound, scene, null, {
     autoplay: true
 })
 
-const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera("camera", -3.14 / 3, 1.4, 6, Vector3.Zero(), scene);
 camera.minZ = 0.1;
 camera.attachControl();
 
@@ -110,6 +109,11 @@ butterfly.material = butterflyMaterial;
 const tree = await createTree(scene);
 tree.scaling.scaleInPlace(3);
 tree.bakeCurrentTransformIntoVertices();
+tree.position.y = -1;
+tree.checkCollisions = true;
+tree.isVisible = false;
+//Mesh.INSTANCEDMESH_SORT_TRANSPARENT = true
+tree.setEnabled(false);
 
 const terrainChunkSize = 20;
 
@@ -122,7 +126,7 @@ const butterflyManager = new PatchManager([butterfly]);
 const treeManager = new PatchManager([tree]);
 
 const terrain = new Terrain(20, 16, 50, (x, z) => {
-    const heightMultiplier = 5;
+    const heightMultiplier = 3;
     const frequency = 0.1;
     const height = Math.cos(x * frequency) * Math.sin(z * frequency) * heightMultiplier;
     const gradX = -Math.sin(x * frequency) * Math.sin(z * frequency) * frequency * heightMultiplier;
@@ -134,7 +138,7 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const grassPatch = new ThinInstancePatch(chunk.mesh.position, chunk.instancesMatrixBuffer);
     grassManager.addPatch(grassPatch);
 
-    const stride = 2000;
+    const stride = 20000;
     const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
     const cubePatch = new InstancePatch(chunk.mesh.position, cubeMatrixBuffer);
     cubeManager.addPatch(cubePatch);
@@ -144,8 +148,8 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const butterflyPatch = new ThinInstancePatch(chunk.mesh.position, butterflyMatrixBuffer);
     butterflyManager.addPatch(butterflyPatch);
 
-    const stride3 = 20000;
-    const treeMatrixBuffer = randomDownSample(chunk.alignedInstancesMatrixBuffer, stride3);
+    const stride3 = 10000;
+    const treeMatrixBuffer = randomDownSample(chunk.instancesMatrixBuffer, stride3);
     const treePatch = new InstancePatch(chunk.mesh.position, treeMatrixBuffer);
     treeManager.addPatch(treePatch);
 
@@ -183,7 +187,7 @@ let terrainUpdateCounter = 0;
 function updateScene() {
     terrainUpdateCounter++;
 
-    ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${cubeManager.getNbInstances().toLocaleString()} cubes | ${engine.getFps().toFixed(0)} FPS`);
+    ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${treeManager.getNbInstances().toLocaleString()} trees | ${engine.getFps().toFixed(0)} FPS`);
 
     grassManager.update(camera.position);
     cubeManager.update(camera.position);

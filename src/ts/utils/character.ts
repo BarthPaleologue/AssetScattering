@@ -56,19 +56,19 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
         let keydown = false;
         //Manage the movements of the character (e.g. position, direction)
         if (inputMap.get("z") || inputMap.get("w")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeed));
+            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed));
             keydown = true;
         }
         if (inputMap.get("s")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeedBackwards));
+            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards));
             keydown = true;
         }
         if (inputMap.get("q") || inputMap.get("a")) {
-            hero.rotate(Vector3.Up(), heroRotationSpeed);
+            hero.rotate(Vector3.Up(), -heroRotationSpeed);
             keydown = true;
         }
         if (inputMap.get("d")) {
-            hero.rotate(Vector3.Up(), -heroRotationSpeed);
+            hero.rotate(Vector3.Up(), heroRotationSpeed);
             keydown = true;
         }
         if (inputMap.get("b")) {
@@ -111,6 +111,14 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
         (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
         if (raycastResult.hasHit) {
             hero.position.y = raycastResult.hitPointWorld.y + 0.01;
+        }
+
+        // camera down raycast
+        const cameraStart = camera.position.add(Vector3.Up().scale(50));
+        const cameraEnd = camera.position.add(Vector3.Down().scale(50));
+        (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(cameraStart, cameraEnd, raycastResult);
+        if (raycastResult.hasHit) {
+            camera.position.y = raycastResult.hitPointWorld.y + 0.01;
         }
     });
 

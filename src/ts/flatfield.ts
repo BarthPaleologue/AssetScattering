@@ -49,10 +49,9 @@ const havokInstance = await HavokPhysics();
 const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
-scene.useRightHandedSystem = true;
 scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
 
-const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera("camera", -3.14 * 3 / 4, 1.4, 6, Vector3.Zero(), scene);
 camera.minZ = 0.1;
 camera.attachControl();
 
