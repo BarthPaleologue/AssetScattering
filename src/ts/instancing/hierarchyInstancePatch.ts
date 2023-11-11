@@ -1,15 +1,14 @@
 import {Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
 import {IPatch} from "./iPatch";
 import {createSquareMatrixBuffer, decomposeModelMatrix} from "../utils/matrixBuffer";
 import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
+import {Mesh} from "@babylonjs/core/Meshes/mesh";
 
-export class InstancePatch implements IPatch {
-    private baseMesh: Mesh | null = null;
+export class HierarchyInstancePatch implements IPatch {
+    private baseRoot: TransformNode | null = null;
     readonly position: Vector3;
 
-    readonly instances: InstancedMesh[] = [];
+    readonly instances: TransformNode[] = [];
     private positions: Vector3[] = [];
     private rotations: Quaternion[] = [];
     private scalings: Vector3[] = [];
@@ -32,40 +31,45 @@ export class InstancePatch implements IPatch {
     }
 
     public clearInstances(): void {
-        if (this.baseMesh === null) return;
+        if (this.baseRoot === null) return;
         for (const instance of this.instances) {
             instance.dispose();
         }
         this.instances.length = 0;
-        this.baseMesh.dispose();
-        this.baseMesh = null;
+        this.baseRoot.dispose();
+        this.baseRoot = null;
     }
 
     public static CreateSquare(position: Vector3, size: number, resolution: number) {
         const buffer = createSquareMatrixBuffer(position, size, resolution);
-        return new InstancePatch(position, buffer);
+        return new HierarchyInstancePatch(position, buffer);
     }
 
-    public createInstances(baseMesh: Mesh): void {
+    public createInstances(baseRoot: TransformNode): void {
         this.clearInstances();
-        this.baseMesh = baseMesh.clone();
-        this.baseMesh.makeGeometryUnique();
-        this.baseMesh.isVisible = false;
-
+        this.baseRoot = baseRoot.clone(baseRoot.name + "Clone", null);
+        if(this.baseRoot === null) throw new Error("baseRoot is null");
+        this.baseRoot.getChildMeshes().forEach(mesh => {
+           if(mesh instanceof Mesh) {
+               mesh.makeGeometryUnique();
+               mesh.isVisible = false;
+           }
+        });
+        
         for (let i = 0; i < this.positions.length; i++) {
-            const instance = this.baseMesh.createInstance(`instance${i}`);
-            instance.position.copyFrom(this.positions[i].add(this.baseMesh.position));
-            instance.rotationQuaternion = this.rotations[i];
-            instance.scaling.copyFrom(this.scalings[i]);
-            this.instances.push(instance);
+            const instanceRoot = this.baseRoot.instantiateHierarchy(null);
+            if (instanceRoot === null) throw new Error("instanceRoot is null");
+            instanceRoot.position.copyFrom(this.positions[i].add(this.baseRoot.position));
+            instanceRoot.rotationQuaternion = this.rotations[i];
+            instanceRoot.scaling.copyFrom(this.scalings[i]);
 
-            instance.checkCollisions = baseMesh.checkCollisions;
+            this.instances.push(instanceRoot);
         }
     }
 
     public getNbInstances(): number {
-        if (this.baseMesh === null) return 0;
-        return this.baseMesh.instances.length;
+        if (this.baseRoot === null) return 0;
+        return this.instances.length;
     }
 
     public getPosition(): Vector3 {
@@ -74,6 +78,6 @@ export class InstancePatch implements IPatch {
 
     public dispose() {
         this.clearInstances();
-        if (this.baseMesh !== null) this.baseMesh.dispose();
+        if (this.baseRoot !== null) this.baseRoot.dispose();
     }
 }
