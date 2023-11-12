@@ -1,7 +1,9 @@
 import {SceneLoader} from "@babylonjs/core/Loading/sceneLoader";
 import {Scene} from "@babylonjs/core/scene";
 import treeModel from "../../assets/tree.babylon";
-import texture from "../../assets/Tree.tga";
+import texture from "../../assets/Tree.png";
+
+import treeGLTF from "../../assets/birch_tree.glb";
 
 import "@babylonjs/loaders";
 import "@babylonjs/core";
@@ -26,4 +28,12 @@ export async function createTree(scene: Scene): Promise<Mesh> {
 
     tree.material = treeMaterial;
     return tree as Mesh;
+}
+
+export async function createTreeGLTF(scene: Scene): Promise<Mesh> {
+    const result = await SceneLoader.ImportMeshAsync("", "", treeGLTF, scene);
+    const tree = result.meshes[0] as Mesh;
+    tree.scaling.scaleInPlace(5);
+    tree.bakeCurrentTransformIntoVertices();
+    return tree;
 }

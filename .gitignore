@@ -1,3 +1,7 @@
 node_modules
 
 .idea
+
+*autosave.kra
+*.png~
+*.kra~

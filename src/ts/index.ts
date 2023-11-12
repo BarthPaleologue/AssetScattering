@@ -148,7 +148,7 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const butterflyPatch = new ThinInstancePatch(chunk.mesh.position, butterflyMatrixBuffer);
     butterflyManager.addPatch(butterflyPatch);
 
-    const stride3 = 10000;
+    const stride3 = 20000;
     const treeMatrixBuffer = randomDownSample(chunk.instancesMatrixBuffer, stride3);
     const treePatch = new InstancePatch(chunk.mesh.position, treeMatrixBuffer);
     treeManager.addPatch(treePatch);
