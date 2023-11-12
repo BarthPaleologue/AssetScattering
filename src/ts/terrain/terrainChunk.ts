@@ -1,11 +1,11 @@
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {Scene} from "@babylonjs/core/scene";
-import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
-import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData";
-import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
-import {PhysicsAggregate} from "@babylonjs/core/Physics/v2/physicsAggregate";
-import {PhysicsShapeType} from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
-import {Observable} from "@babylonjs/core/Misc/observable";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Scene } from "@babylonjs/core/scene";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
+import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import { Observable } from "@babylonjs/core/Misc/observable";
 
 function triangleArea(x1: number, y1: number, z1: number, x2: number, y2: number, z2: number, x3: number, y3: number, z3: number) {
     // use cross product to calculate area of triangle
@@ -26,9 +26,15 @@ function triangleArea(x1: number, y1: number, z1: number, x2: number, y2: number
 
 function triangleAreaFromBuffer(positions: Float32Array, index1: number, index2: number, index3: number) {
     return triangleArea(
-        positions[3 * index1 + 0], positions[3 * index1 + 1], positions[3 * index1 + 2],
-        positions[3 * index2 + 0], positions[3 * index2 + 1], positions[3 * index2 + 2],
-        positions[3 * index3 + 0], positions[3 * index3 + 1], positions[3 * index3 + 2]
+        positions[3 * index1 + 0],
+        positions[3 * index1 + 1],
+        positions[3 * index1 + 2],
+        positions[3 * index2 + 0],
+        positions[3 * index2 + 1],
+        positions[3 * index2 + 2],
+        positions[3 * index3 + 0],
+        positions[3 * index3 + 1],
+        positions[3 * index3 + 2]
     );
 }
 
@@ -60,7 +66,7 @@ function randomPointInTriangleFromBuffer(positions: Float32Array, normals: Float
     const n3y = normals[3 * index3 + 1];
     const n3z = normals[3 * index3 + 2];
 
-    const f1 = (1 - Math.sqrt(r1));
+    const f1 = 1 - Math.sqrt(r1);
     const f2 = Math.sqrt(r1) * (1 - r2);
     const f3 = Math.sqrt(r1) * r2;
 
@@ -81,7 +87,18 @@ function getTransformationQuaternion(from: Vector3, to: Vector3): Quaternion {
     return Quaternion.RotationAxis(rotationAxis, angle);
 }
 
-function scatterInTriangle(chunkPosition: Vector3, n: number, instanceIndex: number, instancesMatrixBuffer: Float32Array, alignedInstancesMatrixBuffer: Float32Array, positions: Float32Array, normals: Float32Array, index1: number, index2: number, index3: number) {
+function scatterInTriangle(
+    chunkPosition: Vector3,
+    n: number,
+    instanceIndex: number,
+    instancesMatrixBuffer: Float32Array,
+    alignedInstancesMatrixBuffer: Float32Array,
+    positions: Float32Array,
+    normals: Float32Array,
+    index1: number,
+    index2: number,
+    index3: number
+) {
     for (let i = 0; i < n; i++) {
         const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
         const alignQuaternion = getTransformationQuaternion(Vector3.Up(), new Vector3(nx, ny, nz));
@@ -92,11 +109,7 @@ function scatterInTriangle(chunkPosition: Vector3, n: number, instanceIndex: num
             alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), rotation)),
             new Vector3(x, y, z).addInPlace(chunkPosition)
         );
-        const matrix = Matrix.Compose(
-            new Vector3(scaling, scaling, scaling),
-            Quaternion.RotationAxis(Vector3.Up(), rotation),
-            new Vector3(x, y, z).addInPlace(chunkPosition)
-        );
+        const matrix = Matrix.Compose(new Vector3(scaling, scaling, scaling), Quaternion.RotationAxis(Vector3.Up(), rotation), new Vector3(x, y, z).addInPlace(chunkPosition));
 
         alignedMatrix.copyToArray(alignedInstancesMatrixBuffer, 16 * instanceIndex);
         matrix.copyToArray(instancesMatrixBuffer, 16 * instanceIndex);
@@ -119,7 +132,15 @@ export class TerrainChunk {
 
     readonly onDisposeObservable = new Observable<TerrainChunk>();
 
-    constructor(chunkPosition: Vector3, size: number, nbVerticesPerRow: number, scatterPerSquareMeter: number, instanceUp: Vector3 | null, scene: Scene, terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number] = () => [0, 0, 0]) {
+    constructor(
+        chunkPosition: Vector3,
+        size: number,
+        nbVerticesPerRow: number,
+        scatterPerSquareMeter: number,
+        instanceUp: Vector3 | null,
+        scene: Scene,
+        terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number] = () => [0, 0, 0]
+    ) {
         this.mesh = new Mesh("terrainPatch", scene);
         this.mesh.position = chunkPosition;
 
@@ -174,8 +195,19 @@ export class TerrainChunk {
 
                 const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
                 const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
-                excessInstanceNumber = (triangleArea1 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances1;
-                instanceIndex = scatterInTriangle(chunkPosition, nbInstances1, instanceIndex, this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer, positions, normals, index - 1, index, index - this.nbVerticesPerRow - 1);
+                excessInstanceNumber = triangleArea1 * scatterPerSquareMeter + excessInstanceNumber - nbInstances1;
+                instanceIndex = scatterInTriangle(
+                    chunkPosition,
+                    nbInstances1,
+                    instanceIndex,
+                    this.instancesMatrixBuffer,
+                    this.alignedInstancesMatrixBuffer,
+                    positions,
+                    normals,
+                    index - 1,
+                    index,
+                    index - this.nbVerticesPerRow - 1
+                );
                 if (instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
                 }
@@ -186,8 +218,19 @@ export class TerrainChunk {
 
                 const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
                 const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
-                excessInstanceNumber = (triangleArea2 * scatterPerSquareMeter + excessInstanceNumber) - nbInstances2;
-                instanceIndex = scatterInTriangle(chunkPosition, nbInstances2, instanceIndex, this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer, positions, normals, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
+                excessInstanceNumber = triangleArea2 * scatterPerSquareMeter + excessInstanceNumber - nbInstances2;
+                instanceIndex = scatterInTriangle(
+                    chunkPosition,
+                    nbInstances2,
+                    instanceIndex,
+                    this.instancesMatrixBuffer,
+                    this.alignedInstancesMatrixBuffer,
+                    positions,
+                    normals,
+                    index,
+                    index - this.nbVerticesPerRow,
+                    index - this.nbVerticesPerRow - 1
+                );
                 if (instanceIndex >= maxNbInstances) {
                     throw new Error("Too many instances");
                 }
@@ -204,7 +247,7 @@ export class TerrainChunk {
 
         vertexData.applyToMesh(this.mesh);
 
-        this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, {mass: 0}, scene);
+        this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
     }
 
     dispose() {

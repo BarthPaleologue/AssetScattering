@@ -1,6 +1,6 @@
-import {TerrainChunk} from "./terrainChunk";
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
-import {Scene} from "@babylonjs/core/scene";
+import { TerrainChunk } from "./terrainChunk";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Scene } from "@babylonjs/core/scene";
 import { Observable } from "@babylonjs/core/Misc/observable";
 
 export class Terrain {
@@ -17,7 +17,13 @@ export class Terrain {
 
     private readonly creationQueue: [Vector3, number][] = [];
 
-    constructor(chunkSize: number, chunkResolution: number, maxDensity: number, heightField: (x: number, y: number) => [height: number, gradX: number, gradZ: number], scene: Scene) {
+    constructor(
+        chunkSize: number,
+        chunkResolution: number,
+        maxDensity: number,
+        heightField: (x: number, y: number) => [height: number, gradX: number, gradZ: number],
+        scene: Scene
+    ) {
         this.chunkSize = chunkSize;
         this.chunkResolution = chunkResolution;
         this.maxDensity = maxDensity;
@@ -33,33 +39,25 @@ export class Terrain {
     }
 
     update(playerPosition: Vector3, renderDistance: number, creationRate: number) {
-        const playerGridPosition = new Vector3(
-            Math.round(playerPosition.x / this.chunkSize),
-            0,
-            Math.round(playerPosition.z / this.chunkSize)
-        );
+        const playerGridPosition = new Vector3(Math.round(playerPosition.x / this.chunkSize), 0, Math.round(playerPosition.z / this.chunkSize));
 
         // remove chunks that are too far away
-        for(const [key, chunk] of this.hashGrid) {
-            if(chunk === null) continue;
-            const chunkGridPosition = new Vector3(
-                Math.floor(chunk.mesh.position.x / this.chunkSize),
-                0,
-                Math.floor(chunk.mesh.position.z / this.chunkSize)
-            );
-            if(chunkGridPosition.subtract(playerGridPosition).lengthSquared() > renderDistance * renderDistance) {
+        for (const [key, chunk] of this.hashGrid) {
+            if (chunk === null) continue;
+            const chunkGridPosition = new Vector3(Math.floor(chunk.mesh.position.x / this.chunkSize), 0, Math.floor(chunk.mesh.position.z / this.chunkSize));
+            if (chunkGridPosition.subtract(playerGridPosition).lengthSquared() > renderDistance * renderDistance) {
                 chunk.dispose();
                 this.hashGrid.delete(key);
             }
         }
 
         // add chunks that are close enough
-        for(let x = -renderDistance; x <= renderDistance; x++) {
-            for(let z = -renderDistance; z <= renderDistance; z++) {
-                if(x * x + z * z > renderDistance * renderDistance) continue;
+        for (let x = -renderDistance; x <= renderDistance; x++) {
+            for (let z = -renderDistance; z <= renderDistance; z++) {
+                if (x * x + z * z > renderDistance * renderDistance) continue;
 
                 const chunkGridPosition = playerGridPosition.add(new Vector3(x, 0, z));
-                if(this.hashGrid.has(chunkGridPosition.toString())) continue;
+                if (this.hashGrid.has(chunkGridPosition.toString())) continue;
 
                 this.creationQueue.push([chunkGridPosition, this.maxDensity]);
                 this.hashGrid.set(chunkGridPosition.toString(), null);
@@ -71,9 +69,9 @@ export class Terrain {
 
     private buildNextChunks(n: number) {
         // dequeue chunks to create
-        for(let i = 0; i < n; i++) {
+        for (let i = 0; i < n; i++) {
             const data = this.creationQueue.shift();
-            if(data === undefined) break;
+            if (data === undefined) break;
             const [position, scatterPerSquareMeter] = data;
             this.createChunk(position, scatterPerSquareMeter);
         }

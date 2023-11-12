@@ -1,49 +1,47 @@
-import {Scene} from "@babylonjs/core/scene";
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import { Scene } from "@babylonjs/core/scene";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import "@babylonjs/core/Loading/loadingScreen";
 
-import {ActionManager, ExecuteCodeAction} from "@babylonjs/core/Actions";
-
-import {MeshBuilder} from "@babylonjs/core/Meshes/meshBuilder";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 
 import "@babylonjs/core/Misc/screenshotTools";
-import {Tools} from "@babylonjs/core/Misc/tools";
+import { Tools } from "@babylonjs/core/Misc/tools";
 
-import {StandardMaterial} from "@babylonjs/core/Materials/standardMaterial";
-import {DirectionalLight} from "@babylonjs/core/Lights/directionalLight";
-import {HemisphericLight} from "@babylonjs/core/Lights/hemisphericLight";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 
 import "../styles/index.scss";
-import {createGrassBlade} from "./grass/grassBlade";
-import {createGrassMaterial} from "./grass/grassMaterial";
+import { createGrassBlade } from "./grass/grassBlade";
+import { createGrassMaterial } from "./grass/grassMaterial";
 
-import {createSkybox} from "./utils/skybox";
-import {UI} from "./utils/ui";
-import {createCharacterController} from "./utils/character";
-import {ThinInstancePatch} from "./instancing/thinInstancePatch";
-import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
+import { createSkybox } from "./utils/skybox";
+import { UI } from "./utils/ui";
+import { createCharacterController } from "./utils/character";
+import { ThinInstancePatch } from "./instancing/thinInstancePatch";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import windSound from "../assets/wind.mp3";
 
-import "@babylonjs/core/Collisions/collisionCoordinator"
+import "@babylonjs/core/Collisions/collisionCoordinator";
 import "@babylonjs/core/Audio/audioSceneComponent";
 import "@babylonjs/core/Audio/audioEngine";
-import {Sound} from "@babylonjs/core/Audio/sound";
-import {Engine} from "@babylonjs/core/Engines/engine";
+import { Sound } from "@babylonjs/core/Audio/sound";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
-import {PatchManager} from "./instancing/patchManager";
-import {downSample, randomDownSample} from "./utils/matrixBuffer";
-import {Terrain} from "./terrain/terrain";
+import { PatchManager } from "./instancing/patchManager";
+import { downSample, randomDownSample } from "./utils/matrixBuffer";
+import { Terrain } from "./terrain/terrain";
 
 import HavokPhysics from "@babylonjs/havok";
-import {HavokPlugin} from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
-import {IPatch} from "./instancing/iPatch";
-import {InstancePatch} from "./instancing/instancePatch";
-import {TerrainChunk} from "./terrain/terrainChunk";
-import {createButterfly} from "./butterfly/butterfly";
-import {createButterflyMaterial} from "./butterfly/butterflyMaterial";
-import {createTree} from "./utils/tree";
+import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
+import { IPatch } from "./instancing/iPatch";
+import { InstancePatch } from "./instancing/instancePatch";
+import { TerrainChunk } from "./terrain/terrainChunk";
+import { createButterfly } from "./butterfly/butterfly";
+import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
+import { createTree } from "./utils/tree";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -58,25 +56,16 @@ const havokPlugin = new HavokPlugin(true, havokInstance);
 const scene = new Scene(engine);
 scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
 
-const inputMap: Map<string, boolean> = new Map<string, boolean>();
-scene.actionManager = new ActionManager(scene);
-scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (e) => {
-    inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
-}));
-scene.actionManager.registerAction(new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
-    inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
-}));
-
 new Sound("wind", windSound, scene, null, {
     loop: true,
     autoplay: true
-})
+});
 
 const camera = new ArcRotateCamera("camera", -3.14 / 3, 1.4, 6, Vector3.Zero(), scene);
 camera.minZ = 0.1;
 camera.attachControl();
 
-const character = await createCharacterController(scene, camera, inputMap);
+const character = await createCharacterController(scene, camera);
 
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
@@ -92,7 +81,7 @@ const grassMaterial = createGrassMaterial(light, scene, character);
 highQualityGrassBlade.material = grassMaterial;
 lowQualityGrassBlade.material = grassMaterial;
 
-const cube = MeshBuilder.CreateBox("cube", {size: 1}, scene);
+const cube = MeshBuilder.CreateBox("cube", { size: 1 }, scene);
 cube.position.y = 0.5;
 cube.setEnabled(false);
 const cubeMaterial = new StandardMaterial("cubeMaterial", scene);
@@ -125,15 +114,21 @@ const cubeManager = new PatchManager([cube]);
 const butterflyManager = new PatchManager([butterfly]);
 const treeManager = new PatchManager([tree]);
 
-const terrain = new Terrain(20, 16, 50, (x, z) => {
-    const heightMultiplier = 3;
-    const frequency = 0.1;
-    const height = Math.cos(x * frequency) * Math.sin(z * frequency) * heightMultiplier;
-    const gradX = -Math.sin(x * frequency) * Math.sin(z * frequency) * frequency * heightMultiplier;
-    const gradZ = Math.cos(x * frequency) * Math.cos(z * frequency) * frequency * heightMultiplier;
+const terrain = new Terrain(
+    20,
+    16,
+    50,
+    (x, z) => {
+        const heightMultiplier = 3;
+        const frequency = 0.1;
+        const height = Math.cos(x * frequency) * Math.sin(z * frequency) * heightMultiplier;
+        const gradX = -Math.sin(x * frequency) * Math.sin(z * frequency) * frequency * heightMultiplier;
+        const gradZ = Math.cos(x * frequency) * Math.cos(z * frequency) * frequency * heightMultiplier;
 
-    return [height, gradX, gradZ];
-}, scene);
+        return [height, gradX, gradZ];
+    },
+    scene
+);
 terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
     const grassPatch = new ThinInstancePatch(chunk.mesh.position, chunk.instancesMatrixBuffer);
     grassManager.addPatch(grassPatch);
@@ -179,7 +174,7 @@ const ui = new UI(scene);
 document.addEventListener("keypress", (e) => {
     if (e.key === "p") {
         // take screenshot
-        Tools.CreateScreenshot(engine, camera, {precision: 1});
+        Tools.CreateScreenshot(engine, camera, { precision: 1 });
     }
 });
 
@@ -212,4 +207,3 @@ window.addEventListener("resize", () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
-

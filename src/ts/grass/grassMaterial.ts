@@ -1,16 +1,16 @@
 import { Effect } from "@babylonjs/core/Materials/effect";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
-import {Scene} from "@babylonjs/core/scene";
+import { Scene } from "@babylonjs/core/scene";
 
 import grassFragment from "../../shaders/grassFragment.glsl";
 import grassVertex from "../../shaders/grassVertex.glsl";
-import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
-import {DirectionalLight} from "@babylonjs/core/Lights/directionalLight";
-import {Texture} from "@babylonjs/core/Materials/Textures/texture";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import perlinNoise from "../../assets/perlin.png";
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
-export function createGrassMaterial(light: DirectionalLight, scene: Scene, player?:TransformNode) {
+export function createGrassMaterial(light: DirectionalLight, scene: Scene, player?: TransformNode) {
     const shaderName = "grassMaterial";
     Effect.ShadersStore[`${shaderName}FragmentShader`] = grassFragment;
     Effect.ShadersStore[`${shaderName}VertexShader`] = grassVertex;

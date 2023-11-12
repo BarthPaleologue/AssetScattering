@@ -1,8 +1,9 @@
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import "@babylonjs/core/Meshes/thinInstanceMesh";
-import {createSquareMatrixBuffer} from "../utils/matrixBuffer";
-import {IPatch} from "./iPatch";
+import { createSquareMatrixBuffer } from "../utils/matrixBuffer";
+import { IPatch } from "./iPatch";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 export class ThinInstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
@@ -20,14 +21,17 @@ export class ThinInstancePatch implements IPatch {
     }
 
     public clearInstances(): void {
-        if(this.baseMesh === null) return;
+        if (this.baseMesh === null) return;
         this.baseMesh.thinInstanceCount = 0;
         this.baseMesh.dispose();
         this.baseMesh = null;
     }
 
-    public createInstances(baseMesh: Mesh): void {
+    public createInstances(baseMesh: TransformNode): void {
         this.clearInstances();
+        if (!(baseMesh instanceof Mesh)) {
+            throw new Error("Tried to create instances from a non-mesh object. Try using HierarchyInstancePatch instead if you want to use a TransformNode.");
+        }
         this.baseMesh = baseMesh.clone();
         this.baseMesh.makeGeometryUnique();
         this.baseMesh.isVisible = true;
@@ -35,7 +39,7 @@ export class ThinInstancePatch implements IPatch {
     }
 
     public getNbInstances(): number {
-        if(this.baseMesh === null) return 0;
+        if (this.baseMesh === null) return 0;
         return this.baseMesh.thinInstanceCount;
     }
 
@@ -45,6 +49,6 @@ export class ThinInstancePatch implements IPatch {
 
     public dispose() {
         this.clearInstances();
-        if(this.baseMesh !== null) this.baseMesh.dispose();
+        if (this.baseMesh !== null) this.baseMesh.dispose();
     }
 }

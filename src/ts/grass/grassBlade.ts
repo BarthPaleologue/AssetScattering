@@ -1,12 +1,15 @@
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData";
-import {Scene} from "@babylonjs/core/scene";
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { Scene } from "@babylonjs/core/scene";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 function rotateAround(vector: Vector3, axis: Vector3, theta: number) {
     // Please note that unit vector are required, i did not divided by the norms
-    return vector.scale(Math.cos(theta)).addInPlace(Vector3.Cross(axis, vector).scaleInPlace(Math.sin(theta))).addInPlace(axis.scale(Vector3.Dot(axis, vector) * (1.0 - Math.cos(theta))));
+    return vector
+        .scale(Math.cos(theta))
+        .addInPlace(Vector3.Cross(axis, vector).scaleInPlace(Math.sin(theta)))
+        .addInPlace(axis.scale(Vector3.Dot(axis, vector) * (1.0 - Math.cos(theta))));
 }
 
 export function createGrassBlade(scene: Scene, nbStacks: number) {

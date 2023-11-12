@@ -1,8 +1,8 @@
-import {Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
-import {IPatch} from "./iPatch";
-import {createSquareMatrixBuffer, decomposeModelMatrix} from "../utils/matrixBuffer";
-import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { IPatch } from "./iPatch";
+import { createSquareMatrixBuffer, decomposeModelMatrix } from "../utils/matrixBuffer";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 export class HierarchyInstancePatch implements IPatch {
     private baseRoot: TransformNode | null = null;
@@ -48,14 +48,14 @@ export class HierarchyInstancePatch implements IPatch {
     public createInstances(baseRoot: TransformNode): void {
         this.clearInstances();
         this.baseRoot = baseRoot.clone(baseRoot.name + "Clone", null);
-        if(this.baseRoot === null) throw new Error("baseRoot is null");
-        this.baseRoot.getChildMeshes().forEach(mesh => {
-           if(mesh instanceof Mesh) {
-               mesh.makeGeometryUnique();
-               mesh.isVisible = false;
-           }
+        if (this.baseRoot === null) throw new Error("baseRoot is null");
+        this.baseRoot.getChildMeshes().forEach((mesh) => {
+            if (mesh instanceof Mesh) {
+                mesh.makeGeometryUnique();
+                mesh.isVisible = false;
+            }
         });
-        
+
         for (let i = 0; i < this.positions.length; i++) {
             const instanceRoot = this.baseRoot.instantiateHierarchy(null);
             if (instanceRoot === null) throw new Error("instanceRoot is null");

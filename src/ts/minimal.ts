@@ -1,16 +1,16 @@
-import {Scene} from "@babylonjs/core/scene";
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import { Scene } from "@babylonjs/core/scene";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import "@babylonjs/core/Loading/loadingScreen";
 
-import {DirectionalLight} from "@babylonjs/core/Lights/directionalLight";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 
 import "../styles/index.scss";
-import {createGrassBlade} from "./grass/grassBlade";
-import {createGrassMaterial} from "./grass/grassMaterial";
+import { createGrassBlade } from "./grass/grassBlade";
+import { createGrassMaterial } from "./grass/grassMaterial";
 
-import {ThinInstancePatch} from "./instancing/thinInstancePatch";
-import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
-import {Engine} from "@babylonjs/core/Engines/engine";
+import { ThinInstancePatch } from "./instancing/thinInstancePatch";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/materials";
 
@@ -52,4 +52,3 @@ window.addEventListener("resize", () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
-

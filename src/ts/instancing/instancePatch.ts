@@ -1,9 +1,9 @@
-import {Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {InstancedMesh} from "@babylonjs/core/Meshes/instancedMesh";
-import {IPatch} from "./iPatch";
-import {createSquareMatrixBuffer, decomposeModelMatrix} from "../utils/matrixBuffer";
-import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
+import { IPatch } from "./iPatch";
+import { createSquareMatrixBuffer, decomposeModelMatrix } from "../utils/matrixBuffer";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 export class InstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
@@ -46,8 +46,11 @@ export class InstancePatch implements IPatch {
         return new InstancePatch(position, buffer);
     }
 
-    public createInstances(baseMesh: Mesh): void {
+    public createInstances(baseMesh: TransformNode): void {
         this.clearInstances();
+        if (!(baseMesh instanceof Mesh)) {
+            throw new Error("Tried to create instances from a non-mesh object. Try using HierarchyInstancePatch instead if you want to use a TransformNode.");
+        }
         this.baseMesh = baseMesh.clone();
         this.baseMesh.makeGeometryUnique();
         this.baseMesh.isVisible = false;

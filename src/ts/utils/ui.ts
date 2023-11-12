@@ -1,5 +1,5 @@
-import {AdvancedDynamicTexture, Rectangle, TextBlock} from "@babylonjs/gui";
-import {Scene} from "@babylonjs/core/scene";
+import { AdvancedDynamicTexture, Rectangle, TextBlock } from "@babylonjs/gui";
+import { Scene } from "@babylonjs/core/scene";
 
 export class UI {
     private readonly gui: AdvancedDynamicTexture;

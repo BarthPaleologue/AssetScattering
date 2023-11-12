@@ -1,19 +1,20 @@
-import {SceneLoader} from "@babylonjs/core/Loading/sceneLoader";
-import {Scene} from "@babylonjs/core/scene";
-import {ArcRotateCamera} from "@babylonjs/core/Cameras/arcRotateCamera";
+import { SceneLoader } from "@babylonjs/core/Loading/sceneLoader";
+import { Scene } from "@babylonjs/core/scene";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import character from "../../assets/character.glb";
-import {Vector3} from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import "@babylonjs/core/Animations/animatable";
 
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
-import {AbstractMesh} from "@babylonjs/core/Meshes/abstractMesh";
-import {TransformNode} from "@babylonjs/core/Meshes/transformNode";
-import {PhysicsRaycastResult} from "@babylonjs/core/Physics/physicsRaycastResult";
-import {PhysicsEngineV2} from "@babylonjs/core/Physics/v2";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResult";
+import { PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
+import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 
-export async function createCharacterController(scene: Scene, camera: ArcRotateCamera, inputMap: Map<string, boolean>): Promise<AbstractMesh> {
+export async function createCharacterController(scene: Scene, camera: ArcRotateCamera): Promise<AbstractMesh> {
     const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
 
     const hero = result.meshes[0];
@@ -36,23 +37,31 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
     let animating = true;
 
     const walkAnim = scene.getAnimationGroupByName("Walking");
-    if (walkAnim === null)
-        throw new Error("'Walking' animation not found");
+    if (walkAnim === null) throw new Error("'Walking' animation not found");
     const walkBackAnim = scene.getAnimationGroupByName("WalkingBackwards");
-    if (walkBackAnim === null)
-        throw new Error("'WalkingBackwards' animation not found");
+    if (walkBackAnim === null) throw new Error("'WalkingBackwards' animation not found");
     const idleAnim = scene.getAnimationGroupByName("Idle");
-    if (idleAnim === null)
-        throw new Error("'Idle' animation not found");
+    if (idleAnim === null) throw new Error("'Idle' animation not found");
     const sambaAnim = scene.getAnimationGroupByName("SambaDancing");
-    if (sambaAnim === null)
-        throw new Error("'Samba' animation not found");
+    if (sambaAnim === null) throw new Error("'Samba' animation not found");
+
+    const inputMap: Map<string, boolean> = new Map<string, boolean>();
+    scene.actionManager = new ActionManager(scene);
+    scene.actionManager.registerAction(
+        new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (e) => {
+            inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+        })
+    );
+    scene.actionManager.registerAction(
+        new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
+            inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+        })
+    );
 
     const raycastResult = new PhysicsRaycastResult();
 
     //Rendering loop (executed for everyframe)
     scene.onBeforePhysicsObservable.add(() => {
-
         let keydown = false;
         //Manage the movements of the character (e.g. position, direction)
         if (inputMap.get("z") || inputMap.get("w")) {

@@ -1,6 +1,6 @@
-import {VertexData} from "@babylonjs/core/Meshes/mesh.vertexData";
-import {Mesh} from "@babylonjs/core/Meshes/mesh";
-import {Scene} from "@babylonjs/core/scene";
+import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Scene } from "@babylonjs/core/scene";
 
 export function createButterfly(scene: Scene) {
     const positions = new Float32Array(6 * 3);

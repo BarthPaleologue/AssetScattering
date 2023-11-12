@@ -1,4 +1,4 @@
-import {Matrix, Quaternion, Vector3} from "@babylonjs/core/Maths/math.vector";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export function downSample(matrixBuffer: Float32Array, stride: number): Float32Array {
     const nbMatrices = Math.floor(matrixBuffer.length / 16);
@@ -30,8 +30,8 @@ export function createSquareMatrixBuffer(position: Vector3, size: number, resolu
         for (let z = 0; z < resolution; z++) {
             const randomCellPositionX = Math.random() * cellSize;
             const randomCellPositionZ = Math.random() * cellSize;
-            const positionX = position.x + x * cellSize - (size / 2) + randomCellPositionX;
-            const positionZ = position.z + z * cellSize - (size / 2) + randomCellPositionZ;
+            const positionX = position.x + x * cellSize - size / 2 + randomCellPositionX;
+            const positionZ = position.z + z * cellSize - size / 2 + randomCellPositionZ;
             const scaling = 0.7 + Math.random() * 0.6;
 
             const matrix = Matrix.Compose(
