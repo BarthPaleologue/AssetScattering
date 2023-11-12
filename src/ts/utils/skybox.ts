@@ -11,4 +11,5 @@ export function createSkybox(scene: Scene, sunPosition: Vector3) {
 
     const skybox = MeshBuilder.CreateBox("skyBox", { size: 1000 }, scene);
     skybox.material = skyMaterial;
+    skybox.infiniteDistance = true;
 }
