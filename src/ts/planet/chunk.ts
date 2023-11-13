@@ -1,8 +1,15 @@
 import { Scene } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
-import { showNormals } from "../utils/debug";
+import { randomPointInTriangleFromBuffer, triangleAreaFromBuffer } from "../utils/triangle";
+import { getTransformationQuaternion } from "../utils/algebra";
+import { createGrassBlade } from "../grass/grassBlade";
+import { createGrassMaterial } from "../grass/grassMaterial";
+import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { ThinInstancePatch } from "../instancing/thinInstancePatch";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { randomDownSample } from "../utils/matrixBuffer";
 
 export enum Direction {
     FRONT,
@@ -42,12 +49,21 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
     const size = planetRadius * 2;
     const stepSize = size / (nbVerticesPerRow - 1);
 
+    const scatterPerSquareMeter = 300;
+
+    const flatArea = size * size;
+    const maxNbInstances = Math.floor(flatArea * scatterPerSquareMeter * 2.0);
+    const instancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+    const alignedInstancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+
     const rotationQuaternion = rotationFromDirection(direction);
 
     const chunkPosition = new Vector3(0, 0, -size / 2);
     const rotatedChunkPosition = chunkPosition.applyRotationQuaternion(rotationQuaternion);
 
     let indexIndex = 0;
+    let instanceIndex = 0;
+    let excessInstanceNumber = 0;
     for (let x = 0; x < nbVerticesPerRow; x++) {
         for (let y = 0; y < nbVerticesPerRow; y++) {
             const index = x * nbVerticesPerRow + y;
@@ -85,11 +101,61 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
             indices[indexIndex++] = index;
             indices[indexIndex++] = index - nbVerticesPerRow - 1;
 
+            const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - nbVerticesPerRow - 1);
+            const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
+            excessInstanceNumber = triangleArea1 * scatterPerSquareMeter + excessInstanceNumber - nbInstances1;
+            instanceIndex = scatterInTriangle(
+                rotatedChunkPosition,
+                nbInstances1,
+                instanceIndex,
+                instancesMatrixBuffer,
+                alignedInstancesMatrixBuffer,
+                positions,
+                normals,
+                index - 1,
+                index,
+                index - nbVerticesPerRow - 1
+            );
+            if (instanceIndex >= maxNbInstances) {
+                throw new Error("Too many instances");
+            }
+
             indices[indexIndex++] = index;
             indices[indexIndex++] = index - nbVerticesPerRow;
             indices[indexIndex++] = index - nbVerticesPerRow - 1;
+
+            const triangleArea2 = triangleAreaFromBuffer(positions, index, index - nbVerticesPerRow, index - nbVerticesPerRow - 1);
+            const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
+            excessInstanceNumber = triangleArea2 * scatterPerSquareMeter + excessInstanceNumber - nbInstances2;
+            instanceIndex = scatterInTriangle(
+                rotatedChunkPosition,
+                nbInstances2,
+                instanceIndex,
+                instancesMatrixBuffer,
+                alignedInstancesMatrixBuffer,
+                positions,
+                normals,
+                index,
+                index - nbVerticesPerRow,
+                index - nbVerticesPerRow - 1
+            );
+            if (instanceIndex >= maxNbInstances) {
+                throw new Error("Too many instances");
+            }
         }
     }
+
+    const grassBlade = createGrassBlade(scene, 2);
+    const grassMaterial = createGrassMaterial(scene.lights[0] as DirectionalLight, scene);
+    grassBlade.material = grassMaterial;
+
+    const patch = new ThinInstancePatch(rotatedChunkPosition, alignedInstancesMatrixBuffer);
+    patch.createInstances(grassBlade);
+
+    const cube = MeshBuilder.CreateBox("cube", { size: 0.2 }, scene);
+    cube.position.y = 0.1;
+    const cubePatch = new ThinInstancePatch(rotatedChunkPosition, randomDownSample(alignedInstancesMatrixBuffer, 100));
+    cubePatch.createInstances(cube);
 
     const vertexData = new VertexData();
     vertexData.positions = positions;
@@ -112,4 +178,37 @@ function terrainFunction(position: Vector3): [height: number, grad: Vector3] {
     const gradZ = Math.cos(position.x * frequency) * Math.sin(position.y * frequency) * Math.sin(position.z * frequency) * frequency * heightMultiplier;
 
     return [height, new Vector3(gradX, gradY, gradZ)];
+}
+
+function scatterInTriangle(
+    chunkPosition: Vector3,
+    n: number,
+    instanceIndex: number,
+    instancesMatrixBuffer: Float32Array,
+    alignedInstancesMatrixBuffer: Float32Array,
+    positions: Float32Array,
+    normals: Float32Array,
+    index1: number,
+    index2: number,
+    index3: number
+) {
+    for (let i = 0; i < n; i++) {
+        const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
+        const alignQuaternion = getTransformationQuaternion(Vector3.Up(), new Vector3(nx, ny, nz));
+        const scaling = 0.9 + Math.random() * 0.2;
+        const rotation = Math.random() * 2 * Math.PI;
+        const alignedMatrix = Matrix.Compose(
+            new Vector3(scaling, scaling, scaling),
+            alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), rotation)),
+            new Vector3(x, y, z).addInPlace(chunkPosition)
+        );
+        const matrix = Matrix.Compose(new Vector3(scaling, scaling, scaling), Quaternion.RotationAxis(Vector3.Up(), rotation), new Vector3(x, y, z).addInPlace(chunkPosition));
+
+        alignedMatrix.copyToArray(alignedInstancesMatrixBuffer, 16 * instanceIndex);
+        matrix.copyToArray(instancesMatrixBuffer, 16 * instanceIndex);
+
+        instanceIndex++;
+    }
+
+    return instanceIndex;
 }

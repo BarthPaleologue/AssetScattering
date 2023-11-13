@@ -12,6 +12,10 @@ import "@babylonjs/materials";
 import { createSkybox } from "./utils/skybox";
 import { createPlanet } from "./planet/createPlanet";
 
+import "@babylonjs/core/Misc/screenshotTools";
+import { Tools } from "@babylonjs/core/Misc/tools";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -26,11 +30,20 @@ const camera = new ArcRotateCamera("camera", 0, 1.4, 10, Vector3.Zero(), scene);
 camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(1, -2, -2).normalize(), scene);
+const ambient = new HemisphericLight("hemi", light.direction, scene);
+ambient.intensity = 0.2;
 
 createSkybox(scene, light.direction.scale(-1));
 
 // Interesting part starts here
 const planet = createPlanet(4, scene);
+
+document.addEventListener("keypress", (e) => {
+    if (e.key === "p") {
+        // take screenshot
+        Tools.CreateScreenshot(engine, camera, { precision: 1 });
+    }
+});
 
 scene.executeWhenReady(() => {
     engine.loadingScreen.hideLoadingUI();
