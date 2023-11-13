@@ -113,6 +113,7 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
                 alignedInstancesMatrixBuffer,
                 positions,
                 normals,
+                vertexNormalToPlanet,
                 index - 1,
                 index,
                 index - nbVerticesPerRow - 1
@@ -136,6 +137,7 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
                 alignedInstancesMatrixBuffer,
                 positions,
                 normals,
+                vertexNormalToPlanet,
                 index,
                 index - nbVerticesPerRow,
                 index - nbVerticesPerRow - 1
@@ -154,11 +156,15 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
     const patch = new ThinInstancePatch(rotatedChunkPosition, alignedInstancesMatrixBuffer);
     patch.createInstances(grassBlade);
 
-    createTree(scene).then((tree) => {
+    /*createTree(scene).then((tree) => {
         tree.isVisible = false;
-        const treePatch = new ThinInstancePatch(rotatedChunkPosition, randomDownSample(alignedInstancesMatrixBuffer, 400));
+        const treePatch = new ThinInstancePatch(rotatedChunkPosition, randomDownSample(instancesMatrixBuffer, 400));
         treePatch.createInstances(tree);
-    });
+    });*/
+
+    const cube = MeshBuilder.CreateBox("cube", { size: 1 }, scene);
+    const cubePatch = new ThinInstancePatch(rotatedChunkPosition, randomDownSample(instancesMatrixBuffer, 400));
+    cubePatch.createInstances(cube);
 
     const vertexData = new VertexData();
     vertexData.positions = positions;
@@ -191,6 +197,7 @@ function scatterInTriangle(
     alignedInstancesMatrixBuffer: Float32Array,
     positions: Float32Array,
     normals: Float32Array,
+    localVerticalDirection: Vector3,
     index1: number,
     index2: number,
     index3: number
@@ -198,6 +205,7 @@ function scatterInTriangle(
     for (let i = 0; i < n; i++) {
         const [x, y, z, nx, ny, nz] = randomPointInTriangleFromBuffer(positions, normals, index1, index2, index3);
         const alignQuaternion = getTransformationQuaternion(Vector3.Up(), new Vector3(nx, ny, nz));
+        const verticalQuaternion = getTransformationQuaternion(Vector3.Up(), localVerticalDirection);
         const scaling = 0.9 + Math.random() * 0.2;
         const rotation = Math.random() * 2 * Math.PI;
         const alignedMatrix = Matrix.Compose(
@@ -205,7 +213,11 @@ function scatterInTriangle(
             alignQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), rotation)),
             new Vector3(x, y, z).addInPlace(chunkPosition)
         );
-        const matrix = Matrix.Compose(new Vector3(scaling, scaling, scaling), Quaternion.RotationAxis(Vector3.Up(), rotation), new Vector3(x, y, z).addInPlace(chunkPosition));
+        const matrix = Matrix.Compose(
+            new Vector3(scaling, scaling, scaling),
+            verticalQuaternion.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), rotation)),
+            new Vector3(x, y, z).addInPlace(chunkPosition)
+        );
 
         alignedMatrix.copyToArray(alignedInstancesMatrixBuffer, 16 * instanceIndex);
         matrix.copyToArray(instancesMatrixBuffer, 16 * instanceIndex);
