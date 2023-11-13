@@ -1,39 +1,31 @@
 import { Scene } from "@babylonjs/core/scene";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { createChunk, Direction } from "./chunk";
+import { Direction, PlanetChunk } from "./planetChunk";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 
-export function createPlanet(radius: number, scene: Scene) {
-    const planet = new TransformNode("planet", scene);
+export class Planet {
+    readonly node: TransformNode;
+    readonly chunks: PlanetChunk[];
 
-    const topChunk = createChunk(Direction.TOP, radius, scene);
-    topChunk.parent = planet;
+    constructor(radius: number, scene: Scene) {
+        this.node = new TransformNode("planet", scene);
 
-    const bottomChunk = createChunk(Direction.BOTTOM, radius, scene);
-    bottomChunk.parent = planet;
+        this.chunks = [
+            new PlanetChunk(Direction.TOP, radius, scene),
+            new PlanetChunk(Direction.BOTTOM, radius, scene),
+            new PlanetChunk(Direction.LEFT, radius, scene),
+            new PlanetChunk(Direction.RIGHT, radius, scene),
+            new PlanetChunk(Direction.FRONT, radius, scene),
+            new PlanetChunk(Direction.BACK, radius, scene)
+        ];
 
-    const leftChunk = createChunk(Direction.LEFT, radius, scene);
-    leftChunk.parent = planet;
+        const material = new StandardMaterial("planetMaterial", scene);
+        material.specularColor.scaleInPlace(0);
+        //material.wireframe = true;
 
-    const rightChunk = createChunk(Direction.RIGHT, radius, scene);
-    rightChunk.parent = planet;
-
-    const frontChunk = createChunk(Direction.FRONT, radius, scene);
-    frontChunk.parent = planet;
-
-    const backChunk = createChunk(Direction.BACK, radius, scene);
-    backChunk.parent = planet;
-
-    const material = new StandardMaterial("planetMaterial", scene);
-    material.specularColor.scaleInPlace(0);
-    //material.wireframe = true;
-
-    topChunk.material = material;
-    bottomChunk.material = material;
-    leftChunk.material = material;
-    rightChunk.material = material;
-    frontChunk.material = material;
-    backChunk.material = material;
-
-    return planet;
+        this.chunks.forEach(chunk => {
+            chunk.mesh.parent = this.node;
+            chunk.mesh.material = material;
+        });
+    }
 }

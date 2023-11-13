@@ -10,7 +10,7 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/materials";
 import { createSkybox } from "./utils/skybox";
-import { createPlanet } from "./planet/createPlanet";
+import { Planet } from "./planet/createPlanet";
 
 import "@babylonjs/core/Misc/screenshotTools";
 import { Tools } from "@babylonjs/core/Misc/tools";
@@ -36,7 +36,7 @@ ambient.intensity = 0.2;
 createSkybox(scene, light.direction.scale(-1));
 
 // Interesting part starts here
-const planet = createPlanet(4, scene);
+const planet = new Planet(4, scene);
 
 document.addEventListener("keypress", (e) => {
     if (e.key === "p") {
