@@ -6,22 +6,22 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 export function createPlanet(radius: number, scene: Scene) {
     const planet = new TransformNode("planet", scene);
 
-    const topChunk = createChunk(Direction.TOP, scene);
+    const topChunk = createChunk(Direction.TOP, radius, scene);
     topChunk.parent = planet;
 
-    const bottomChunk = createChunk(Direction.BOTTOM, scene);
+    const bottomChunk = createChunk(Direction.BOTTOM, radius, scene);
     bottomChunk.parent = planet;
 
-    const leftChunk = createChunk(Direction.LEFT, scene);
+    const leftChunk = createChunk(Direction.LEFT, radius, scene);
     leftChunk.parent = planet;
 
-    const rightChunk = createChunk(Direction.RIGHT, scene);
+    const rightChunk = createChunk(Direction.RIGHT, radius, scene);
     rightChunk.parent = planet;
 
-    const frontChunk = createChunk(Direction.FRONT, scene);
+    const frontChunk = createChunk(Direction.FRONT, radius, scene);
     frontChunk.parent = planet;
 
-    const backChunk = createChunk(Direction.BACK, scene);
+    const backChunk = createChunk(Direction.BACK, radius, scene);
     backChunk.parent = planet;
 
     const material = new StandardMaterial("planetMaterial", scene);

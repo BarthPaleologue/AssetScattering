@@ -22,7 +22,7 @@ engine.displayLoadingUI();
 
 const scene = new Scene(engine);
 
-const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
+const camera = new ArcRotateCamera("camera", 0, 1.4, 10, Vector3.Zero(), scene);
 camera.attachControl();
 
 const light = new DirectionalLight("light", new Vector3(1, -2, -2).normalize(), scene);
@@ -30,7 +30,7 @@ const light = new DirectionalLight("light", new Vector3(1, -2, -2).normalize(), 
 createSkybox(scene, light.direction.scale(-1));
 
 // Interesting part starts here
-const planet = createPlanet(1, scene);
+const planet = createPlanet(4, scene);
 
 scene.executeWhenReady(() => {
     engine.loadingScreen.hideLoadingUI();
