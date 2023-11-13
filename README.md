@@ -13,6 +13,8 @@ Main demo with procedural terrain, lod, collisions, butterflies and trees: [here
 
 Large flat grass field with lod and butterflies: [here](https://barthpaleologue.github.io/AssetScattering/field.html)
 
+Experimentation on a spherical world: [here](https://barthpaleologue.github.io/AssetScattering/planet.html)
+
 Minimal example of a dense patch of grass: [here](https://barthpaleologue.github.io/AssetScattering/minimal.html)
 
 If you can't run the demo, there is a video on YouTube [here](https://www.youtube.com/watch?v=0I5Kd784K6A).
