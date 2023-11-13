@@ -13,6 +13,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResult";
 import { PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
+import { setUpVector } from "./algebra";
 
 export async function createCharacterController(scene: Scene, camera: ArcRotateCamera): Promise<AbstractMesh> {
     const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
@@ -115,19 +116,11 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
         }
 
         // downward raycast
-        const start = hero.position.add(Vector3.Up().scale(50));
-        const end = hero.position.add(Vector3.Down().scale(50));
+        const start = hero.position.add(hero.up.scale(50));
+        const end = hero.position.add(hero.up.scale(-50));
         (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
         if (raycastResult.hasHit) {
             hero.position.y = raycastResult.hitPointWorld.y + 0.01;
-        }
-
-        // camera down raycast
-        const cameraStart = camera.position.add(Vector3.Up().scale(50));
-        const cameraEnd = camera.position.add(Vector3.Down().scale(50));
-        (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(cameraStart, cameraEnd, raycastResult);
-        if (raycastResult.hasHit) {
-            camera.position.y = raycastResult.hitPointWorld.y + 0.01;
         }
     });
 

@@ -8,8 +8,9 @@ import butterflyTexture from "../../assets/butterfly.png";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
-export function createButterflyMaterial(player: TransformNode, light: DirectionalLight, scene: Scene) {
+export function createButterflyMaterial(light: DirectionalLight, scene: Scene, player?: TransformNode) {
     const shaderName = "butterflyMaterial";
     Effect.ShadersStore[`${shaderName}FragmentShader`] = butterflyFragment;
     Effect.ShadersStore[`${shaderName}VertexShader`] = butterflyVertex;
@@ -28,7 +29,8 @@ export function createButterflyMaterial(player: TransformNode, light: Directiona
     let elapsedSeconds = 0;
     scene.onBeforeRenderObservable.add(() => {
         elapsedSeconds += scene.getEngine().getDeltaTime() / 1000;
-        butterflyMaterial.setVector3("playerPosition", player.position);
+        const playerPosition = player?.position ?? new Vector3(0, 500, 0);
+        butterflyMaterial.setVector3("playerPosition", playerPosition);
         butterflyMaterial.setFloat("time", elapsedSeconds);
     });
 

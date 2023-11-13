@@ -9,8 +9,12 @@ import { createGrassMaterial } from "../grass/grassMaterial";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { ThinInstancePatch } from "../instancing/thinInstancePatch";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { downSample, randomDownSample } from "../utils/matrixBuffer";
+import { downSample } from "../utils/matrixBuffer";
 import { createTree } from "../utils/tree";
+import { createButterfly } from "../butterfly/butterfly";
+import { createButterflyMaterial } from "../butterfly/butterflyMaterial";
+import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
+import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 import { InstancePatch } from "../instancing/instancePatch";
 
 export enum Direction {
@@ -163,39 +167,48 @@ export class PlanetChunk {
 
         vertexData.applyToMesh(this.mesh);
 
+        new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
+
         this.scatterAssets(scene);
     }
 
     scatterAssets(scene: Scene) {
         const grassBlade = createGrassBlade(scene, 2);
         grassBlade.isVisible = false;
-        const grassMaterial = createGrassMaterial(scene.lights[0] as DirectionalLight, scene);
-        grassBlade.material = grassMaterial;
+        grassBlade.material = createGrassMaterial(scene.lights[0] as DirectionalLight, scene);
 
         const patch = new ThinInstancePatch(this.mesh.position, this.alignedInstancesMatrixBuffer);
         patch.createInstances(grassBlade);
 
-        createTree(scene).then((tree) => {
+        /*createTree(scene).then((tree) => {
             tree.scaling.scaleInPlace(3);
             tree.position.y = -1;
             tree.bakeCurrentTransformIntoVertices();
             tree.isVisible = false;
-            const treePatch = new ThinInstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 10000));
+            const treePatch = new ThinInstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 20000));
             treePatch.createInstances(tree);
-        });
+        });*/
 
         const cube = MeshBuilder.CreateBox("cube", { size: 1 }, scene);
         cube.position.y = 0.5;
         cube.bakeCurrentTransformIntoVertices();
         cube.isVisible = false;
-        const cubePatch = new ThinInstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 3000));
+        cube.checkCollisions = true;
+        const cubePatch = new InstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 5000));
         cubePatch.createInstances(cube);
 
+        /*const butterfly = createButterfly(scene);
+        //butterfly.position.y = 1;
+        //butterfly.bakeCurrentTransformIntoVertices();
+        butterfly.material = createButterflyMaterial(scene.lights[0] as DirectionalLight, scene);
+        butterfly.isVisible = false;
+        const butterflyPatch = new ThinInstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 1000));
+        butterflyPatch.createInstances(butterfly);*/
     }
 }
 
 function terrainFunction(position: Vector3): [height: number, grad: Vector3] {
-    const heightMultiplier = 0.2;
+    const heightMultiplier = 0.2 * 0;
     const frequency = 3;
     const height = Math.cos(position.x * frequency) * Math.sin(position.y * frequency) * Math.cos(position.z * frequency) * heightMultiplier;
     const gradX = -Math.sin(position.x * frequency) * Math.sin(position.y * frequency) * Math.cos(position.z * frequency) * frequency * heightMultiplier;

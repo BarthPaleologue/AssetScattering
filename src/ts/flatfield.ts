@@ -103,7 +103,7 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 1;
 butterfly.isVisible = false;
 
-const butterflyMaterial = createButterflyMaterial(character, light, scene);
+const butterflyMaterial = createButterflyMaterial(light, scene, character);
 butterfly.material = butterflyMaterial;
 
 const butterflyPatch = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100);

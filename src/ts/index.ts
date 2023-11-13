@@ -23,19 +23,20 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import windSound from "../assets/wind.mp3";
 
-import "@babylonjs/core/Collisions/collisionCoordinator";
 import "@babylonjs/core/Audio/audioSceneComponent";
 import "@babylonjs/core/Audio/audioEngine";
 import { Sound } from "@babylonjs/core/Audio/sound";
 import { Engine } from "@babylonjs/core/Engines/engine";
 
-import "@babylonjs/core/Physics/physicsEngineComponent";
 import { PatchManager } from "./instancing/patchManager";
 import { downSample, randomDownSample } from "./utils/matrixBuffer";
 import { Terrain } from "./terrain/terrain";
 
+import "@babylonjs/core/Collisions/collisionCoordinator";
+import "@babylonjs/core/Physics/physicsEngineComponent";
 import HavokPhysics from "@babylonjs/havok";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
+
 import { IPatch } from "./instancing/iPatch";
 import { InstancePatch } from "./instancing/instancePatch";
 import { TerrainChunk } from "./terrain/terrainChunk";
@@ -92,7 +93,7 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 1;
 butterfly.isVisible = false;
 
-const butterflyMaterial = createButterflyMaterial(character, light, scene);
+const butterflyMaterial = createButterflyMaterial(light, scene, character);
 butterfly.material = butterflyMaterial;
 
 const tree = await createTree(scene);
