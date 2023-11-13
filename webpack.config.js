@@ -12,7 +12,8 @@ const config = {
     entry: {
         index: "./src/ts/index.ts",
         minimal: "./src/ts/minimal.ts",
-        flatfield: "./src/ts/flatfield"
+        flatfield: "./src/ts/flatfield.ts",
+        planet: "./src/ts/planet.ts",
     },
     output: {
         path: path.resolve(__dirname, "dist")
@@ -41,6 +42,12 @@ const config = {
             filename: "field.html",
             template: path.join(htmlPath, "index.html"),
             chunks: ["flatfield"]
+        }),
+        new HtmlWebpackPlugin({
+            title: "Asset Scattering - Planet",
+            filename: "planet.html",
+            template: path.join(htmlPath, "index.html"),
+            chunks: ["planet"]
         }),
         new MiniCssExtractPlugin()
     ],
