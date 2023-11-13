@@ -2,6 +2,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
+import { showNormals } from "../utils/debug";
 
 export enum Direction {
     FRONT,
@@ -32,7 +33,7 @@ function rotationFromDirection(direction: Direction) {
 export function createChunk(direction: Direction, planetRadius: number, scene: Scene) {
     const chunk = new Mesh("chunk", scene);
 
-    const nbVerticesPerRow = 10;
+    const nbVerticesPerRow = 64;
 
     const positions = new Float32Array(nbVerticesPerRow * nbVerticesPerRow * 3);
     const normals = new Float32Array(nbVerticesPerRow * nbVerticesPerRow * 3);
@@ -43,8 +44,9 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
 
     const rotationQuaternion = rotationFromDirection(direction);
 
-    const chunkPosition = new Vector3(0, 0, size / 2);
+    const chunkPosition = new Vector3(0, 0, -size / 2);
     const rotatedChunkPosition = chunkPosition.applyRotationQuaternion(rotationQuaternion);
+    const chunkNormalToPlanet = rotatedChunkPosition.normalizeToNew();
 
     let indexIndex = 0;
     for (let x = 0; x < nbVerticesPerRow; x++) {
@@ -57,26 +59,26 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
             const vertexPosition = chunkPosition.add(new Vector3(positionX, positionY, positionZ));
             vertexPosition.applyRotationQuaternionInPlace(rotationQuaternion);
 
-            vertexPosition.normalize().scaleInPlace(planetRadius);
+            const vertexNormalToPlanet = vertexPosition.normalizeToNew();
 
-            // rotate the shit out of it
+            vertexPosition.copyFrom(vertexNormalToPlanet.scale(planetRadius));
 
-            const [height, gradX, gradZ] = [0, 0, 0]; //terrainFunction(chunk.position.x + positionX, this.mesh.position.z + positionY);
+            const [height, gradient] = terrainFunction(vertexPosition);
 
+            const projectedGradient = gradient.subtract(vertexNormalToPlanet.scale(Vector3.Dot(gradient, vertexNormalToPlanet)));
+
+            vertexPosition.addInPlace(vertexNormalToPlanet.scale(height));
             vertexPosition.subtractInPlace(rotatedChunkPosition);
 
             positions[3 * index + 0] = vertexPosition.x;
             positions[3 * index + 1] = vertexPosition.y;
             positions[3 * index + 2] = vertexPosition.z;
 
-            const normalX = -gradX;
-            const normalY = 1;
-            const normalZ = -gradZ;
-            const normalLength = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+            const normal = vertexNormalToPlanet.subtract(projectedGradient).normalize();
 
-            normals[3 * index + 0] = normalX / normalLength;
-            normals[3 * index + 1] = normalY / normalLength;
-            normals[3 * index + 2] = normalZ / normalLength;
+            normals[3 * index + 0] = normal.x;
+            normals[3 * index + 1] = normal.y;
+            normals[3 * index + 2] = normal.z;
 
             if (x == 0 || y == 0) continue;
 
@@ -100,4 +102,15 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
     chunk.position = rotatedChunkPosition;
 
     return chunk;
+}
+
+function terrainFunction(position: Vector3): [height: number, grad: Vector3] {
+    const heightMultiplier = 0.2;
+    const frequency = 3;
+    const height = Math.cos(position.x * frequency) * Math.sin(position.y * frequency) * Math.cos(position.z * frequency) * heightMultiplier;
+    const gradX = -Math.sin(position.x * frequency) * Math.sin(position.y * frequency) * Math.cos(position.z * frequency) * frequency * heightMultiplier;
+    const gradY = Math.cos(position.x * frequency) * Math.cos(position.y * frequency) * Math.cos(position.z * frequency) * frequency * heightMultiplier;
+    const gradZ = Math.cos(position.x * frequency) * Math.sin(position.y * frequency) * Math.sin(position.z * frequency) * frequency * heightMultiplier;
+
+    return [height, new Vector3(gradX, gradY, gradZ)];
 }

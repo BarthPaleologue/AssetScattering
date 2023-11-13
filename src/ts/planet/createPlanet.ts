@@ -25,7 +25,8 @@ export function createPlanet(radius: number, scene: Scene) {
     backChunk.parent = planet;
 
     const material = new StandardMaterial("planetMaterial", scene);
-    material.wireframe = true;
+    material.specularColor.scaleInPlace(0);
+    //material.wireframe = true;
 
     topChunk.material = material;
     bottomChunk.material = material;
