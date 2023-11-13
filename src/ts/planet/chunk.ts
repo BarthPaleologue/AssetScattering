@@ -10,6 +10,7 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { ThinInstancePatch } from "../instancing/thinInstancePatch";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { randomDownSample } from "../utils/matrixBuffer";
+import { createTree } from "../utils/tree";
 
 export enum Direction {
     FRONT,
@@ -146,16 +147,18 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
     }
 
     const grassBlade = createGrassBlade(scene, 2);
+    grassBlade.isVisible = false;
     const grassMaterial = createGrassMaterial(scene.lights[0] as DirectionalLight, scene);
     grassBlade.material = grassMaterial;
 
     const patch = new ThinInstancePatch(rotatedChunkPosition, alignedInstancesMatrixBuffer);
     patch.createInstances(grassBlade);
 
-    const cube = MeshBuilder.CreateBox("cube", { size: 0.2 }, scene);
-    cube.position.y = 0.1;
-    const cubePatch = new ThinInstancePatch(rotatedChunkPosition, randomDownSample(alignedInstancesMatrixBuffer, 100));
-    cubePatch.createInstances(cube);
+    createTree(scene).then((tree) => {
+        tree.isVisible = false;
+        const treePatch = new ThinInstancePatch(rotatedChunkPosition, randomDownSample(alignedInstancesMatrixBuffer, 400));
+        treePatch.createInstances(tree);
+    });
 
     const vertexData = new VertexData();
     vertexData.positions = positions;
