@@ -46,7 +46,6 @@ export function createChunk(direction: Direction, planetRadius: number, scene: S
 
     const chunkPosition = new Vector3(0, 0, -size / 2);
     const rotatedChunkPosition = chunkPosition.applyRotationQuaternion(rotationQuaternion);
-    const chunkNormalToPlanet = rotatedChunkPosition.normalizeToNew();
 
     let indexIndex = 0;
     for (let x = 0; x < nbVerticesPerRow; x++) {
