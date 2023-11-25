@@ -6,13 +6,13 @@ uniform vec3 lightDirection;
 
 uniform sampler2D butterflyTexture;
 
-in vec3 vPosition;
-in vec2 vUV;
+varying vec3 vPosition;
+varying vec2 vUV;
 
-in mat4 normalMatrix;
-in vec3 vNormal;
+varying mat4 normalMatrix;
+varying vec3 vNormal;
 
-in vec3 vOriginalWorldPosition;
+varying vec3 vOriginalWorldPosition;
 
 // src: https://gist.github.com/mairod/a75e7b44f68110e1576d77419d608786
 vec3 hueShift( vec3 color, float hueAdjust ){

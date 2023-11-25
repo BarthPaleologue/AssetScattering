@@ -1,8 +1,8 @@
 precision highp float;
 
-in vec3 position;
-in vec3 normal;
-in vec2 uv;
+attribute vec3 position;
+attribute vec3 normal;
+attribute vec2 uv;
 
 uniform mat4 viewProjection;
 
@@ -12,13 +12,13 @@ uniform vec3 playerPosition;
 
 uniform float time;
 
-out vec3 vPosition;
-out vec2 vUV;
+varying vec3 vPosition;
+varying vec2 vUV;
 
-out mat4 normalMatrix;
-out vec3 vNormal;
+varying mat4 normalMatrix;
+varying vec3 vNormal;
 
-out vec3 vOriginalWorldPosition;
+varying vec3 vOriginalWorldPosition;
 
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 vec3 rotateAround(vec3 vector, vec3 axis, float theta) {

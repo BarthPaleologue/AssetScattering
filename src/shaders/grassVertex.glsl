@@ -1,7 +1,7 @@
 precision highp float;
 
-in vec3 position;
-in vec3 normal;
+attribute vec3 position;
+attribute vec3 normal;
 
 uniform mat4 view;
 uniform mat4 projection;
@@ -13,10 +13,10 @@ uniform float time;
 
 uniform sampler2D perlinNoise;
 
-out vec3 vPosition;
+varying vec3 vPosition;
 
-out mat4 normalMatrix;
-out vec3 vNormal;
+varying mat4 normalMatrix;
+varying vec3 vNormal;
 
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 vec3 rotateAround(vec3 vector, vec3 axis, float theta) {

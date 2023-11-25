@@ -43,12 +43,13 @@ import { TerrainChunk } from "./terrain/terrainChunk";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
 import { createTree } from "./utils/tree";
+import { EngineFactory } from "@babylonjs/core";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = new Engine(canvas, true);
+const engine = await EngineFactory.CreateAsync(canvas, {});
 engine.displayLoadingUI();
 
 const havokInstance = await HavokPhysics();
