@@ -31,9 +31,9 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
 
     //Scale the model down
     //Hero character variables
-    const heroSpeed = 0.03;
-    const heroSpeedBackwards = 0.02;
-    const heroRotationSpeed = 0.1;
+    const heroSpeed = 1.8;
+    const heroSpeedBackwards = 1.2;
+    const heroRotationSpeed = 6;
 
     let animating = true;
 
@@ -63,22 +63,23 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
 
     //Rendering loop (executed for everyframe)
     scene.onBeforePhysicsObservable.add(() => {
+        const deltaTime = scene.getEngine().getDeltaTime() / 1000;
         let keydown = false;
         //Manage the movements of the character (e.g. position, direction)
         if (inputMap.get("z") || inputMap.get("w")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed));
+            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed * deltaTime));
             keydown = true;
         }
         if (inputMap.get("s")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards));
+            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards * deltaTime));
             keydown = true;
         }
         if (inputMap.get("q") || inputMap.get("a")) {
-            hero.rotate(Vector3.Up(), -heroRotationSpeed);
+            hero.rotate(Vector3.Up(), -heroRotationSpeed * deltaTime);
             keydown = true;
         }
         if (inputMap.get("d")) {
-            hero.rotate(Vector3.Up(), heroRotationSpeed);
+            hero.rotate(Vector3.Up(), heroRotationSpeed * deltaTime);
             keydown = true;
         }
         if (inputMap.get("b")) {
