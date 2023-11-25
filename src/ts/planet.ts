@@ -22,14 +22,21 @@ import HavokPhysics from "@babylonjs/havok";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { createCharacterController } from "./utils/character";
 import { setUpVector } from "./utils/algebra";
+import { EngineFactory } from "@babylonjs/core";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = new Engine(canvas, true);
+const engine = await EngineFactory.CreateAsync(canvas, {});
 engine.displayLoadingUI();
+
+if (engine.getCaps().supportComputeShaders) {
+    console.log("%c Compute Shaders are supported", "background: #222; color: #bada55");
+} else {
+    console.warn("Compute shaders are not supported, falling back to CPU");
+}
 
 const havokInstance = await HavokPhysics();
 const havokPlugin = new HavokPlugin(true, havokInstance);

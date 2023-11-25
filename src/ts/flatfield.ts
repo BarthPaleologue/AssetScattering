@@ -45,7 +45,7 @@ engine.displayLoadingUI();
 if (engine.getCaps().supportComputeShaders) {
     console.log("%c Compute Shaders are supported", "background: #222; color: #bada55");
 } else {
-    console.error("Compute shaders are not supported");
+    console.warn("Compute shaders are not supported, falling back to CPU");
 }
 
 const havokInstance = await HavokPhysics();
