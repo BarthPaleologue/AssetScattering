@@ -10,16 +10,16 @@ import { createGrassMaterial } from "./grass/grassMaterial";
 
 import { ThinInstancePatch } from "./instancing/thinInstancePatch";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/materials";
+import { EngineFactory } from "@babylonjs/core";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = new Engine(canvas, true);
+const engine = await EngineFactory.CreateAsync(canvas, {});
 engine.displayLoadingUI();
 
 const scene = new Scene(engine);
@@ -39,8 +39,9 @@ grassBlade.material = grassMaterial;
 const patchSize = 20;
 const patchResolution = patchSize * 10;
 
-const patch = ThinInstancePatch.CreateSquare(new Vector3(0, 0, 0), patchSize, patchResolution);
-patch.createInstances(grassBlade);
+ThinInstancePatch.CreateSquare(new Vector3(0, 0, 0), patchSize, patchResolution, engine).then((patch) => {
+    patch.createInstances(grassBlade);
+})
 
 scene.executeWhenReady(() => {
     engine.loadingScreen.hideLoadingUI();

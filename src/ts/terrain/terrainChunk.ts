@@ -59,7 +59,6 @@ export class TerrainChunk {
         size: number,
         nbVerticesPerRow: number,
         scatterPerSquareMeter: number,
-        instanceUp: Vector3 | null,
         scene: Scene,
         terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number] = () => [0, 0, 0]
     ) {
@@ -73,6 +72,8 @@ export class TerrainChunk {
         this.mesh.material = this.material;
 
         this.nbVerticesPerRow = nbVerticesPerRow;
+
+        const areComputeShadersSupported = scene.getEngine().getCaps().supportComputeShaders;
 
         const positions = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
         const normals = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);

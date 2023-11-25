@@ -4,3 +4,4 @@ declare module "*.glb";
 declare module "*.babylon";
 declare module "*.tga";
 declare module "*.mp3";
+declare module "*.wgsl";

@@ -22,7 +22,6 @@ import "@babylonjs/core/Collisions/collisionCoordinator";
 import "@babylonjs/core/Audio/audioSceneComponent";
 import "@babylonjs/core/Audio/audioEngine";
 import { Sound } from "@babylonjs/core/Audio/sound";
-import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Physics/physicsEngineComponent";
 import { PatchManager } from "./instancing/patchManager";
@@ -33,15 +32,21 @@ import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { IPatch } from "./instancing/iPatch";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
+import { EngineFactory } from "@babylonjs/core";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = new Engine(canvas, true);
-
+const engine = await EngineFactory.CreateAsync(canvas, {});
 engine.displayLoadingUI();
+
+if (engine.getCaps().supportComputeShaders) {
+    console.log("%c Compute Shaders are supported", "background: #222; color: #bada55");
+} else {
+    console.error("Compute shaders are not supported");
+}
 
 const havokInstance = await HavokPhysics();
 const havokPlugin = new HavokPlugin(true, havokInstance);
@@ -83,8 +88,11 @@ const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBla
     return distance < patchSize * 3 ? 1 : 0;
 });
 
-grassManager.addPatches(PatchManager.circleInit(fieldRadius, patchSize, patchResolution));
-grassManager.initInstances();
+const grassPromise = PatchManager.circleInit(fieldRadius, patchSize, patchResolution, engine).then((patches) => {
+    console.log("grass ready");
+    grassManager.addPatches(patches);
+    grassManager.initInstances();
+});
 
 const ground = MeshBuilder.CreateGround(
     "ground",
@@ -106,8 +114,10 @@ butterfly.isVisible = false;
 const butterflyMaterial = createButterflyMaterial(light, scene, character);
 butterfly.material = butterflyMaterial;
 
-const butterflyPatch = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100);
-butterflyPatch.createInstances(butterfly);
+const butterflyPromise = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100, engine).then((patch) => {
+    console.log("butterfly ready");
+    patch.createInstances(butterfly);
+});
 
 const ui = new UI(scene);
 
@@ -124,9 +134,12 @@ function updateScene() {
 }
 
 scene.executeWhenReady(() => {
-    engine.loadingScreen.hideLoadingUI();
     scene.registerBeforeRender(() => updateScene());
     engine.runRenderLoop(() => scene.render());
+});
+
+Promise.all([grassPromise, butterflyPromise]).then(() => {
+    engine.loadingScreen.hideLoadingUI();
 });
 
 window.addEventListener("resize", () => {

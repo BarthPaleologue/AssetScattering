@@ -4,6 +4,7 @@ import { ThinInstancePatch } from "./thinInstancePatch";
 import { createSquareMatrixBuffer } from "../utils/matrixBuffer";
 import { IPatch } from "./iPatch";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 export class PatchManager {
     private readonly meshesFromLod: TransformNode[];
@@ -52,22 +53,22 @@ export class PatchManager {
         this.queue.splice(queueIndex, 1);
     }
 
-    public static circleInit(radius: number, patchSize: number, patchResolution: number): ThinInstancePatch[] {
-        const patches: ThinInstancePatch[] = [];
+    public static async circleInit(radius: number, patchSize: number, patchResolution: number, engine: Engine): Promise<ThinInstancePatch[]> {
+        const promises: Promise<ThinInstancePatch>[] = [];
         for (let x = -radius; x <= radius; x++) {
             for (let z = -radius; z <= radius; z++) {
                 const radiusSquared = x * x + z * z;
                 if (radiusSquared >= radius * radius) continue;
 
                 const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
-                const patchMatrixBuffer = createSquareMatrixBuffer(patchPosition, patchSize, patchResolution);
-                const patch = new ThinInstancePatch(patchPosition, patchMatrixBuffer);
 
-                patches.push(patch);
+                promises.push(createSquareMatrixBuffer(patchPosition, patchSize, patchResolution, engine).then((buffer) => {
+                    return new ThinInstancePatch(patchPosition, buffer);
+                }));
             }
         }
 
-        return patches;
+        return Promise.all(promises);
     }
 
     public update(playerPosition: Vector3) {

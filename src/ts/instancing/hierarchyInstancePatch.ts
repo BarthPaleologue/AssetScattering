@@ -3,6 +3,7 @@ import { IPatch } from "./iPatch";
 import { createSquareMatrixBuffer, decomposeModelMatrix } from "../utils/matrixBuffer";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 export class HierarchyInstancePatch implements IPatch {
     private baseRoot: TransformNode | null = null;
@@ -40,8 +41,8 @@ export class HierarchyInstancePatch implements IPatch {
         this.baseRoot = null;
     }
 
-    public static CreateSquare(position: Vector3, size: number, resolution: number) {
-        const buffer = createSquareMatrixBuffer(position, size, resolution);
+    public static async CreateSquare(position: Vector3, size: number, resolution: number, engine: Engine) {
+        const buffer = await createSquareMatrixBuffer(position, size, resolution, engine);
         return new HierarchyInstancePatch(position, buffer);
     }
 

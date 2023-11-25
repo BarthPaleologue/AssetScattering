@@ -52,6 +52,12 @@ canvas.height = window.innerHeight;
 const engine = await EngineFactory.CreateAsync(canvas, {});
 engine.displayLoadingUI();
 
+if (engine.getCaps().supportComputeShaders) {
+    console.log("%c Compute Shaders are supported", "background: #222; color: #bada55");
+} else {
+    console.error("Compute shaders are not supported");
+}
+
 const havokInstance = await HavokPhysics();
 const havokPlugin = new HavokPlugin(true, havokInstance);
 

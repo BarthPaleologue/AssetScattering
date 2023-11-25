@@ -4,6 +4,7 @@ import "@babylonjs/core/Meshes/thinInstanceMesh";
 import { createSquareMatrixBuffer } from "../utils/matrixBuffer";
 import { IPatch } from "./iPatch";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 export class ThinInstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
@@ -15,8 +16,8 @@ export class ThinInstancePatch implements IPatch {
         this.matrixBuffer = matrixBuffer;
     }
 
-    public static CreateSquare(position: Vector3, size: number, resolution: number) {
-        const buffer = createSquareMatrixBuffer(position, size, resolution);
+    public static async CreateSquare(position: Vector3, size: number, resolution: number, engine: Engine) {
+        const buffer = await createSquareMatrixBuffer(position, size, resolution, engine);
         return new ThinInstancePatch(position, buffer);
     }
 

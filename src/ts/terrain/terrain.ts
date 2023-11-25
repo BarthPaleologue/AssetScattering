@@ -32,7 +32,7 @@ export class Terrain {
     }
 
     private createChunk(gridPosition: Vector3, scatterPerSquareMeter: number): TerrainChunk {
-        const chunk = new TerrainChunk(gridPosition.scale(this.chunkSize), this.chunkSize, this.chunkResolution, scatterPerSquareMeter, null, this.scene, this.heightField);
+        const chunk = new TerrainChunk(gridPosition.scale(this.chunkSize), this.chunkSize, this.chunkResolution, scatterPerSquareMeter, this.scene, this.heightField);
         this.hashGrid.set(gridPosition.toString(), chunk);
         this.onCreateChunkObservable.notifyObservers(chunk);
         return chunk;

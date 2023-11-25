@@ -4,6 +4,7 @@ import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { IPatch } from "./iPatch";
 import { createSquareMatrixBuffer, decomposeModelMatrix } from "../utils/matrixBuffer";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 export class InstancePatch implements IPatch {
     private baseMesh: Mesh | null = null;
@@ -41,8 +42,8 @@ export class InstancePatch implements IPatch {
         this.baseMesh = null;
     }
 
-    public static CreateSquare(position: Vector3, size: number, resolution: number) {
-        const buffer = createSquareMatrixBuffer(position, size, resolution);
+    public static async CreateSquare(position: Vector3, size: number, resolution: number, engine: Engine) {
+        const buffer = await createSquareMatrixBuffer(position, size, resolution, engine);
         return new InstancePatch(position, buffer);
     }
 
