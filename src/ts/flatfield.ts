@@ -53,6 +53,10 @@ const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
 scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
+scene.executeWhenReady(() => {
+    engine.runRenderLoop(() => scene.render());
+});
+
 
 const camera = new ArcRotateCamera("camera", (-3.14 * 3) / 4, 1.4, 6, Vector3.Zero(), scene);
 camera.minZ = 0.1;
@@ -89,7 +93,6 @@ const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBla
 });
 
 const grassPromise = PatchManager.circleInit(fieldRadius, patchSize, patchResolution, engine).then((patches) => {
-    console.log("grass ready");
     grassManager.addPatches(patches);
     grassManager.initInstances();
 });
@@ -115,7 +118,6 @@ const butterflyMaterial = createButterflyMaterial(light, scene, character);
 butterfly.material = butterflyMaterial;
 
 const butterflyPromise = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100, engine).then((patch) => {
-    console.log("butterfly ready");
     patch.createInstances(butterfly);
 });
 
@@ -128,14 +130,9 @@ document.addEventListener("keypress", (e) => {
     }
 });
 
-function updateScene() {
+scene.onBeforeRenderObservable.add(() =>{
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${grassManager.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
     grassManager.update(camera.position);
-}
-
-scene.executeWhenReady(() => {
-    scene.registerBeforeRender(() => updateScene());
-    engine.runRenderLoop(() => scene.render());
 });
 
 Promise.all([grassPromise, butterflyPromise]).then(() => {

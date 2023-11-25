@@ -6,7 +6,6 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 
 import "../styles/index.scss";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
-import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/materials";
 import { createSkybox } from "./utils/skybox";
@@ -43,6 +42,9 @@ const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
 scene.enablePhysics(Vector3.Zero(), havokPlugin);
+scene.executeWhenReady(() => {
+    engine.runRenderLoop(() => scene.render());
+});
 
 const planetRadius = 10;
 
@@ -75,10 +77,7 @@ document.addEventListener("keypress", (e) => {
     }
 });
 
-scene.executeWhenReady(() => {
-    engine.loadingScreen.hideLoadingUI();
-    engine.runRenderLoop(() => scene.render());
-});
+engine.loadingScreen.hideLoadingUI();
 
 window.addEventListener("resize", () => {
     engine.resize();

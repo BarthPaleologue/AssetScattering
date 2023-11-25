@@ -23,6 +23,9 @@ const engine = await EngineFactory.CreateAsync(canvas, {});
 engine.displayLoadingUI();
 
 const scene = new Scene(engine);
+scene.executeWhenReady(() => {
+    engine.runRenderLoop(() => scene.render());
+});
 
 const camera = new ArcRotateCamera("camera", 0, 1.4, 15, Vector3.Zero(), scene);
 camera.attachControl();
@@ -41,11 +44,7 @@ const patchResolution = patchSize * 10;
 
 ThinInstancePatch.CreateSquare(new Vector3(0, 0, 0), patchSize, patchResolution, engine).then((patch) => {
     patch.createInstances(grassBlade);
-})
-
-scene.executeWhenReady(() => {
     engine.loadingScreen.hideLoadingUI();
-    engine.runRenderLoop(() => scene.render());
 });
 
 window.addEventListener("resize", () => {

@@ -26,7 +26,6 @@ import windSound from "../assets/wind.mp3";
 import "@babylonjs/core/Audio/audioSceneComponent";
 import "@babylonjs/core/Audio/audioEngine";
 import { Sound } from "@babylonjs/core/Audio/sound";
-import { Engine } from "@babylonjs/core/Engines/engine";
 
 import { PatchManager } from "./instancing/patchManager";
 import { downSample, randomDownSample } from "./utils/matrixBuffer";
@@ -63,6 +62,9 @@ const havokPlugin = new HavokPlugin(true, havokInstance);
 
 const scene = new Scene(engine);
 scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
+scene.executeWhenReady(() => {
+    engine.runRenderLoop(() => scene.render());
+});
 
 new Sound("wind", windSound, scene, null, {
     loop: true,
@@ -187,7 +189,7 @@ document.addEventListener("keypress", (e) => {
 });
 
 let terrainUpdateCounter = 0;
-function updateScene() {
+scene.onBeforeRenderObservable.add(() => {
     terrainUpdateCounter++;
 
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${treeManager.getNbInstances().toLocaleString()} trees | ${engine.getFps().toFixed(0)} FPS`);
@@ -202,13 +204,10 @@ function updateScene() {
         terrain.update(character.position, renderDistance, 1);
         terrainUpdateCounter = 0;
     }
-}
-
-scene.executeWhenReady(() => {
-    engine.loadingScreen.hideLoadingUI();
-    scene.registerBeforeRender(() => updateScene());
-    engine.runRenderLoop(() => scene.render());
 });
+
+
+engine.loadingScreen.hideLoadingUI();
 
 window.addEventListener("resize", () => {
     engine.resize();
