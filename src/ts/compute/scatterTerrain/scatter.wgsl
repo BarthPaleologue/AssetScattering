@@ -49,6 +49,10 @@ fn hash23(p: vec3<f32>) -> vec2<f32> {
 fn rotation_matrix_from_to(src: vec3<f32>, dest: vec3<f32>) -> mat3x3<f32> {
     let axis: vec3<f32> = normalize(cross(src, dest));
     let angle: f32 = acos(dot(src, dest));
+    return rotation_matrix_axis(axis, angle);
+}
+
+fn rotation_matrix_axis(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
     let c: f32 = cos(angle);
     let s: f32 = sin(angle);
     let t: f32 = 1.0 - c;
@@ -127,20 +131,24 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>) {
         let position: vec3<f32> = f0 * position0 + f1 * position1 + f2 * position2 + params.position;
         let normal: vec3<f32> = f0 * normal0 + f1 * normal1 + f2 * normal2;
 
+        let angle: f32 = hash13(position) * 6.283185307179586476925286766559;
+        let scaling: f32 = 0.9 + hash13(position.yzx) * 0.2;
+
         let up: vec3<f32> = vec3<f32>(0.0, 1.0, 0.0);
-        let rotation: mat3x3<f32> = rotation_matrix_from_to(up, normal);
+        let rotationY: mat3x3<f32> = rotation_matrix_axis(up, angle);
+        let rotationNormal: mat3x3<f32> = rotation_matrix_from_to(up, normal) * rotationY;
 
         let alignedInstanceMatrix: mat4x4<f32> = mat4x4<f32>(
-            rotation[0][0], rotation[1][0], rotation[2][0], position.x,
-            rotation[0][1], rotation[1][1], rotation[2][1], position.y,
-            rotation[0][2], rotation[1][2], rotation[2][2], position.z,
+            scaling * rotationNormal[0][0], rotationNormal[1][0], rotationNormal[2][0], position.x,
+            rotationNormal[0][1], scaling * rotationNormal[1][1], rotationNormal[2][1], position.y,
+            rotationNormal[0][2], rotationNormal[1][2], scaling * rotationNormal[2][2], position.z,
             0.0, 0.0, 0.0, 1.0
         );
 
         let instanceMatrix: mat4x4<f32> = mat4x4<f32>(
-            1.0, 0.0, 0.0, position.x,
-            0.0, 1.0, 0.0, position.y,
-            0.0, 0.0, 1.0, position.z,
+            scaling * rotationY[0][0], rotationY[1][0], rotationY[2][0], position.x,
+            rotationY[0][1], scaling * rotationY[1][1], rotationY[2][1], position.y,
+            rotationY[0][2], rotationY[1][2], scaling * rotationY[2][2], position.z,
             0.0, 0.0, 0.0, 1.0
         );
 
