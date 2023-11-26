@@ -140,10 +140,16 @@ const terrain = new Terrain(
     scene
 );
 terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
+    if(chunk.instancesMatrixBuffer === null) {
+        throw new Error("Instances matrix buffer is null");
+    }
+    if(chunk.alignedInstancesMatrixBuffer === null) {
+        throw new Error("Aligned instance matrices are null");
+    }
     const grassPatch = new ThinInstancePatch(chunk.mesh.position, chunk.instancesMatrixBuffer);
     grassManager.addPatch(grassPatch);
 
-    const stride = 20000;
+    const stride = 5000;
     const cubeMatrixBuffer = downSample(chunk.alignedInstancesMatrixBuffer, stride);
     const cubePatch = new InstancePatch(chunk.mesh.position, cubeMatrixBuffer);
     cubeManager.addPatch(cubePatch);

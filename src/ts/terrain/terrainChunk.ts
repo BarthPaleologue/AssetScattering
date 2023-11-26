@@ -8,6 +8,9 @@ import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugi
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { randomPointInTriangleFromBuffer, triangleAreaFromBuffer } from "../utils/triangle";
 import { getTransformationQuaternion } from "../utils/algebra";
+import { computeVertexData } from "../compute/vertexData/computeVertexData";
+import { computeScatterPoints } from "../compute/scatterTerrain/computeScatterPoints";
+import { showNormals } from "../utils/debug";
 
 function scatterInTriangle(
     chunkPosition: Vector3,
@@ -43,16 +46,20 @@ function scatterInTriangle(
 }
 
 export class TerrainChunk {
+    readonly size: number;
     readonly nbVerticesPerRow: number;
     readonly mesh: Mesh;
     readonly material: StandardMaterial;
 
-    readonly instancesMatrixBuffer: Float32Array;
-    readonly alignedInstancesMatrixBuffer: Float32Array;
+    instancesMatrixBuffer: Float32Array | null = null;
+    alignedInstancesMatrixBuffer: Float32Array | null = null;
 
-    private readonly aggregate: PhysicsAggregate;
+    private aggregate: PhysicsAggregate | null = null;
 
     readonly onDisposeObservable = new Observable<TerrainChunk>();
+
+    private readonly scatterPerSquareMeter;
+    private readonly terrainFunction: (x: number, y: number) => [height: number, gradX: number, gradZ: number];
 
     constructor(
         chunkPosition: Vector3,
@@ -71,110 +78,124 @@ export class TerrainChunk {
         this.material.wireframe = false;
         this.mesh.material = this.material;
 
+        this.size = size;
         this.nbVerticesPerRow = nbVerticesPerRow;
 
-        const areComputeShadersSupported = scene.getEngine().getCaps().supportComputeShaders;
+        this.scatterPerSquareMeter = scatterPerSquareMeter;
+        this.terrainFunction = terrainFunction;
+    }
 
-        const positions = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
-        const normals = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
-        const indices = new Uint32Array((this.nbVerticesPerRow - 1) * (this.nbVerticesPerRow - 1) * 6);
+    async init(scene: Scene): Promise<void> {
+        const flatArea = this.size * this.size;
 
-        const flatArea = size * size;
-        const maxNbInstances = Math.floor(flatArea * scatterPerSquareMeter * 2.0);
-        this.instancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
-        this.alignedInstancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+        if(scene.getEngine().getCaps().supportComputeShaders) {
+            const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, this.size, scene.getEngine());
+            vertexData.applyToMesh(this.mesh);
+            this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
 
-        const stepSize = size / (this.nbVerticesPerRow - 1);
+            [this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer] =
+                await computeScatterPoints(vertexData, this.mesh.position, flatArea, this.nbVerticesPerRow, this.scatterPerSquareMeter, scene.getEngine());
+        } else {
+            const positions = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
+            const normals = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
+            const indices = new Uint32Array((this.nbVerticesPerRow - 1) * (this.nbVerticesPerRow - 1) * 6);
 
-        let indexIndex = 0;
-        let instanceIndex = 0;
-        let excessInstanceNumber = 0;
-        for (let x = 0; x < this.nbVerticesPerRow; x++) {
-            for (let y = 0; y < this.nbVerticesPerRow; y++) {
-                const index = x * this.nbVerticesPerRow + y;
-                const positionX = x * stepSize - size / 2;
-                const positionY = y * stepSize - size / 2;
+            const maxNbInstances = Math.floor(flatArea * this.scatterPerSquareMeter * 2.0);
+            this.instancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+            this.alignedInstancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
 
-                const [height, gradX, gradZ] = terrainFunction(this.mesh.position.x + positionX, this.mesh.position.z + positionY);
+            const stepSize = this.size / (this.nbVerticesPerRow - 1);
 
-                positions[3 * index + 0] = positionX;
-                positions[3 * index + 1] = height;
-                positions[3 * index + 2] = positionY;
+            let indexIndex = 0;
+            let instanceIndex = 0;
+            let excessInstanceNumber = 0;
+            for (let x = 0; x < this.nbVerticesPerRow; x++) {
+                for (let y = 0; y < this.nbVerticesPerRow; y++) {
+                    const index = x * this.nbVerticesPerRow + y;
+                    const positionX = x * stepSize - this.size / 2;
+                    const positionY = y * stepSize - this.size / 2;
 
-                const normalX = -gradX;
-                const normalY = 1;
-                const normalZ = -gradZ;
-                const normalLength = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
+                    const [height, gradX, gradZ] = this.terrainFunction(this.mesh.position.x + positionX, this.mesh.position.z + positionY);
 
-                normals[3 * index + 0] = normalX / normalLength;
-                normals[3 * index + 1] = normalY / normalLength;
-                normals[3 * index + 2] = normalZ / normalLength;
+                    positions[3 * index + 0] = positionX;
+                    positions[3 * index + 1] = height;
+                    positions[3 * index + 2] = positionY;
 
-                if (x == 0 || y == 0) continue;
+                    const normalX = -gradX;
+                    const normalY = 1;
+                    const normalZ = -gradZ;
+                    const normalLength = Math.sqrt(normalX * normalX + normalY * normalY + normalZ * normalZ);
 
-                indices[indexIndex++] = index - 1;
-                indices[indexIndex++] = index;
-                indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
+                    normals[3 * index + 0] = normalX / normalLength;
+                    normals[3 * index + 1] = normalY / normalLength;
+                    normals[3 * index + 2] = normalZ / normalLength;
 
-                const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
-                const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
-                excessInstanceNumber = triangleArea1 * scatterPerSquareMeter + excessInstanceNumber - nbInstances1;
-                instanceIndex = scatterInTriangle(
-                    chunkPosition,
-                    nbInstances1,
-                    instanceIndex,
-                    this.instancesMatrixBuffer,
-                    this.alignedInstancesMatrixBuffer,
-                    positions,
-                    normals,
-                    index - 1,
-                    index,
-                    index - this.nbVerticesPerRow - 1
-                );
-                if (instanceIndex >= maxNbInstances) {
-                    throw new Error("Too many instances");
-                }
+                    if (x == 0 || y == 0) continue;
 
-                indices[indexIndex++] = index;
-                indices[indexIndex++] = index - this.nbVerticesPerRow;
-                indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
+                    indices[indexIndex++] = index - 1;
+                    indices[indexIndex++] = index;
+                    indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
 
-                const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
-                const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
-                excessInstanceNumber = triangleArea2 * scatterPerSquareMeter + excessInstanceNumber - nbInstances2;
-                instanceIndex = scatterInTriangle(
-                    chunkPosition,
-                    nbInstances2,
-                    instanceIndex,
-                    this.instancesMatrixBuffer,
-                    this.alignedInstancesMatrixBuffer,
-                    positions,
-                    normals,
-                    index,
-                    index - this.nbVerticesPerRow,
-                    index - this.nbVerticesPerRow - 1
-                );
-                if (instanceIndex >= maxNbInstances) {
-                    throw new Error("Too many instances");
+                    const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
+                    const nbInstances1 = Math.floor(triangleArea1 * this.scatterPerSquareMeter + excessInstanceNumber);
+                    excessInstanceNumber = triangleArea1 * this.scatterPerSquareMeter + excessInstanceNumber - nbInstances1;
+                    instanceIndex = scatterInTriangle(
+                        this.mesh.position,
+                        nbInstances1,
+                        instanceIndex,
+                        this.instancesMatrixBuffer,
+                        this.alignedInstancesMatrixBuffer,
+                        positions,
+                        normals,
+                        index - 1,
+                        index,
+                        index - this.nbVerticesPerRow - 1
+                    );
+                    if (instanceIndex >= maxNbInstances) {
+                        throw new Error("Too many instances");
+                    }
+
+                    indices[indexIndex++] = index;
+                    indices[indexIndex++] = index - this.nbVerticesPerRow;
+                    indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
+
+                    const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
+                    const nbInstances2 = Math.floor(triangleArea2 * this.scatterPerSquareMeter + excessInstanceNumber);
+                    excessInstanceNumber = triangleArea2 * this.scatterPerSquareMeter + excessInstanceNumber - nbInstances2;
+                    instanceIndex = scatterInTriangle(
+                        this.mesh.position,
+                        nbInstances2,
+                        instanceIndex,
+                        this.instancesMatrixBuffer,
+                        this.alignedInstancesMatrixBuffer,
+                        positions,
+                        normals,
+                        index,
+                        index - this.nbVerticesPerRow,
+                        index - this.nbVerticesPerRow - 1
+                    );
+                    if (instanceIndex >= maxNbInstances) {
+                        throw new Error("Too many instances");
+                    }
                 }
             }
+
+            this.instancesMatrixBuffer = this.instancesMatrixBuffer.slice(0, 16 * instanceIndex);
+            this.alignedInstancesMatrixBuffer = this.alignedInstancesMatrixBuffer.slice(0, 16 * instanceIndex);
+
+            const vertexData = new VertexData();
+            vertexData.positions = positions;
+            vertexData.indices = indices;
+            vertexData.normals = normals;
+
+            vertexData.applyToMesh(this.mesh);
         }
-
-        this.instancesMatrixBuffer = this.instancesMatrixBuffer.slice(0, 16 * instanceIndex);
-        this.alignedInstancesMatrixBuffer = this.alignedInstancesMatrixBuffer.slice(0, 16 * instanceIndex);
-
-        const vertexData = new VertexData();
-        vertexData.positions = positions;
-        vertexData.indices = indices;
-        vertexData.normals = normals;
-
-        vertexData.applyToMesh(this.mesh);
 
         this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
     }
 
     dispose() {
-        this.aggregate.dispose();
+        this.aggregate?.dispose();
         this.mesh.dispose();
         this.onDisposeObservable.notifyObservers(this);
     }
