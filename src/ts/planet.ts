@@ -73,7 +73,7 @@ scene.executeWhenReady(() => {
 });
 
 window.addEventListener("resize", () => {
-    engine.resize();
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    engine.resize(true);
 });
