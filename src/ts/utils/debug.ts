@@ -1,8 +1,9 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Color3, VertexBuffer } from "@babylonjs/core";
 import { Scene } from "@babylonjs/core/scene";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
+import { Color3 } from "@babylonjs/core/Maths/math.color";
 
 export function showNormals(mesh: Mesh, scene: Scene) {
     const normals = mesh.getVerticesData(VertexBuffer.NormalKind);

@@ -21,7 +21,9 @@ import HavokPhysics from "@babylonjs/havok";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { createCharacterController } from "./utils/character";
 import { setUpVector } from "./utils/algebra";
-import { EngineFactory } from "@babylonjs/core";
+import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
+import "@babylonjs/core/Engines";
+
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;

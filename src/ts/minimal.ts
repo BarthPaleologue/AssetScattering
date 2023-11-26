@@ -12,7 +12,8 @@ import { ThinInstancePatch } from "./instancing/thinInstancePatch";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import "@babylonjs/materials";
-import { EngineFactory } from "@babylonjs/core";
+import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
+import "@babylonjs/core/Engines";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;

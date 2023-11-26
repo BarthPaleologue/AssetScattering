@@ -32,7 +32,8 @@ import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { IPatch } from "./instancing/iPatch";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
-import { EngineFactory } from "@babylonjs/core";
+import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
+import "@babylonjs/core/Engines";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;

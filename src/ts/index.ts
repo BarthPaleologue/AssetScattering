@@ -42,7 +42,8 @@ import { TerrainChunk } from "./terrain/terrainChunk";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
 import { createTree } from "./utils/tree";
-import { EngineFactory } from "@babylonjs/core";
+import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
+import "@babylonjs/core/Engines";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
