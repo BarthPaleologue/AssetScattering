@@ -6,6 +6,7 @@ import character from "../../assets/character.glb";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import "@babylonjs/core/Animations/animatable";
+import "@babylonjs/core/Culling/ray";
 
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
