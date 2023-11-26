@@ -16,7 +16,7 @@ export class PatchManager {
     private readonly computeLodLevel: (patch: IPatch) => number;
     private readonly queue: Array<{ newLOD: number; patch: IPatch }> = [];
 
-    constructor(meshesFromLod: Mesh[], computeLodLevel = (patch: IPatch) => 0) {
+    constructor(meshesFromLod: Mesh[], computeLodLevel = (_patch: IPatch) => 0) {
         this.meshesFromLod = meshesFromLod;
         this.nbVertexFromLod = this.meshesFromLod.map((mesh) => {
             if (mesh instanceof Mesh) return mesh.getTotalVertices();
@@ -62,16 +62,18 @@ export class PatchManager {
 
                 const patchPosition = new Vector3(x * patchSize, 0, z * patchSize);
 
-                promises.push(createSquareMatrixBuffer(patchPosition, patchSize, patchResolution, engine).then((buffer) => {
-                    return new ThinInstancePatch(patchPosition, buffer);
-                }));
+                promises.push(
+                    createSquareMatrixBuffer(patchPosition, patchSize, patchResolution, engine).then((buffer) => {
+                        return new ThinInstancePatch(patchPosition, buffer);
+                    })
+                );
             }
         }
 
         return Promise.all(promises);
     }
 
-    public update(playerPosition: Vector3) {
+    public update() {
         if (this.meshesFromLod.length > 1) this.updateLOD();
         else this.updateQueue(this.patchUpdateRate);
     }

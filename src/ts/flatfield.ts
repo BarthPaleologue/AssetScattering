@@ -32,15 +32,14 @@ import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { IPatch } from "./instancing/iPatch";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
-import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
-import "@babylonjs/core/Engines";
+import { createEngine } from "./utils/createEngine";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = await EngineFactory.CreateAsync(canvas, {});
+const engine = await createEngine(canvas);
 engine.displayLoadingUI();
 
 if (engine.getCaps().supportComputeShaders) {
@@ -57,7 +56,6 @@ scene.enablePhysics(new Vector3(0, -9.81, 0), havokPlugin);
 scene.executeWhenReady(() => {
     engine.runRenderLoop(() => scene.render());
 });
-
 
 const camera = new ArcRotateCamera("camera", (-3.14 * 3) / 4, 1.4, 6, Vector3.Zero(), scene);
 camera.minZ = 0.1;
@@ -93,10 +91,9 @@ const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBla
     return distance < patchSize * 3 ? 1 : 0;
 });
 
-const grassPromise = PatchManager.circleInit(fieldRadius, patchSize, patchResolution, engine).then((patches) => {
-    grassManager.addPatches(patches);
-    grassManager.initInstances();
-});
+const grassPatches = await PatchManager.circleInit(fieldRadius, patchSize, patchResolution, engine);
+grassManager.addPatches(grassPatches);
+grassManager.initInstances();
 
 const ground = MeshBuilder.CreateGround(
     "ground",
@@ -118,9 +115,8 @@ butterfly.isVisible = false;
 const butterflyMaterial = createButterflyMaterial(light, scene, character);
 butterfly.material = butterflyMaterial;
 
-const butterflyPromise = ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100, engine).then((patch) => {
-    patch.createInstances(butterfly);
-});
+const butterflyPatch = await ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100, engine);
+butterflyPatch.createInstances(butterfly);
 
 const ui = new UI(scene);
 
@@ -131,12 +127,12 @@ document.addEventListener("keypress", (e) => {
     }
 });
 
-scene.onBeforeRenderObservable.add(() =>{
+scene.onBeforeRenderObservable.add(() => {
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${grassManager.getNbVertices().toLocaleString()} vertices | ${engine.getFps().toFixed(0)} FPS`);
-    grassManager.update(camera.position);
+    grassManager.update();
 });
 
-Promise.all([grassPromise, butterflyPromise]).then(() => {
+scene.executeWhenReady(() => {
     engine.loadingScreen.hideLoadingUI();
 });
 

@@ -8,9 +8,8 @@ import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugi
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { randomPointInTriangleFromBuffer, triangleAreaFromBuffer } from "../utils/triangle";
 import { getTransformationQuaternion } from "../utils/algebra";
-import { computeVertexData } from "../compute/vertexData/computeVertexData";
+import { computeVertexData } from "../compute/Terrain2dVertexData/computeVertexData";
 import { computeScatterPoints } from "../compute/scatterTerrain/computeScatterPoints";
-import { showNormals } from "../utils/debug";
 
 function scatterInTriangle(
     chunkPosition: Vector3,
@@ -88,13 +87,19 @@ export class TerrainChunk {
     async init(scene: Scene): Promise<void> {
         const flatArea = this.size * this.size;
 
-        if(scene.getEngine().getCaps().supportComputeShaders) {
+        if (scene.getEngine().getCaps().supportComputeShaders) {
             const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, this.size, scene.getEngine());
             vertexData.applyToMesh(this.mesh);
             this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
 
-            [this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer] =
-                await computeScatterPoints(vertexData, this.mesh.position, flatArea, this.nbVerticesPerRow, this.scatterPerSquareMeter, scene.getEngine());
+            [this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer] = await computeScatterPoints(
+                vertexData,
+                this.mesh.position,
+                flatArea,
+                this.nbVerticesPerRow,
+                this.scatterPerSquareMeter,
+                scene.getEngine()
+            );
         } else {
             const positions = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
             const normals = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);

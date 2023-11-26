@@ -15,7 +15,7 @@ import { PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { setUpVector } from "./algebra";
 
-export async function createCharacterController(scene: Scene, camera: ArcRotateCamera): Promise<AbstractMesh> {
+export async function createCharacterController(scene: Scene, camera: ArcRotateCamera, planet = false): Promise<AbstractMesh> {
     const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
 
     const hero = result.meshes[0];
@@ -60,6 +60,9 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
     );
 
     const raycastResult = new PhysicsRaycastResult();
+
+    //FIXME when the position is 0 then character cannot be rotated (this makes no sense)
+    hero.position = new Vector3(0, 0.000000001, 0);
 
     //Rendering loop (executed for everyframe)
     scene.onBeforePhysicsObservable.add(() => {
@@ -116,12 +119,17 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
             }
         }
 
+        if (planet) {
+            setUpVector(hero, hero.position.normalizeToNew());
+            camera.upVector = hero.up;
+        }
+
         // downward raycast
         const start = hero.position.add(hero.up.scale(50));
         const end = hero.position.add(hero.up.scale(-50));
         (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
         if (raycastResult.hasHit) {
-            hero.position.y = raycastResult.hitPointWorld.y + 0.01;
+            hero.position = raycastResult.hitPointWorld.add(hero.up.scale(0.01));
         }
     });
 

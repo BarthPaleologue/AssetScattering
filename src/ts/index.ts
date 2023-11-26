@@ -42,14 +42,14 @@ import { TerrainChunk } from "./terrain/terrainChunk";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
 import { createTree } from "./utils/tree";
-import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
-import "@babylonjs/core/Engines";
+import { createEngine } from "./utils/createEngine";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = await EngineFactory.CreateAsync(canvas, {});
+const engine = await createEngine(canvas);
+
 engine.displayLoadingUI();
 
 if (engine.getCaps().supportComputeShaders) {
@@ -141,10 +141,10 @@ const terrain = new Terrain(
     scene
 );
 terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
-    if(chunk.instancesMatrixBuffer === null) {
+    if (chunk.instancesMatrixBuffer === null) {
         throw new Error("Instances matrix buffer is null");
     }
-    if(chunk.alignedInstancesMatrixBuffer === null) {
+    if (chunk.alignedInstancesMatrixBuffer === null) {
         throw new Error("Aligned instance matrices are null");
     }
     const grassPatch = new ThinInstancePatch(chunk.mesh.position, chunk.instancesMatrixBuffer);
@@ -179,7 +179,7 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
 });
 
 const renderDistance = 6;
-terrain.init(character.position, renderDistance);
+await terrain.init(character.position, renderDistance);
 
 grassManager.initInstances();
 cubeManager.initInstances();
@@ -201,10 +201,10 @@ scene.onBeforeRenderObservable.add(() => {
 
     ui.setText(`${grassManager.getNbInstances().toLocaleString()} grass blades\n${treeManager.getNbInstances().toLocaleString()} trees | ${engine.getFps().toFixed(0)} FPS`);
 
-    grassManager.update(camera.position);
-    cubeManager.update(camera.position);
-    butterflyManager.update(camera.position);
-    treeManager.update(camera.position);
+    grassManager.update();
+    cubeManager.update();
+    butterflyManager.update();
+    treeManager.update();
 
     // do not update terrain every frame to prevent lag spikes
     if (terrainUpdateCounter % 30 === 0) {
@@ -213,8 +213,9 @@ scene.onBeforeRenderObservable.add(() => {
     }
 });
 
-
-engine.loadingScreen.hideLoadingUI();
+scene.executeWhenReady(() => {
+    engine.loadingScreen.hideLoadingUI();
+});
 
 window.addEventListener("resize", () => {
     engine.resize();

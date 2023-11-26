@@ -23,9 +23,10 @@ export class Planet {
         material.specularColor.scaleInPlace(0);
         //material.wireframe = true;
 
-        this.chunks.forEach(chunk => {
+        this.chunks.forEach((chunk) => {
             chunk.mesh.parent = this.node;
             chunk.mesh.material = material;
+            chunk.init(scene);
         });
     }
 }

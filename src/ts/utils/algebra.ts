@@ -10,6 +10,6 @@ export function getTransformationQuaternion(from: Vector3, to: Vector3): Quatern
 export function setUpVector(transformNode: TransformNode, newUpVector: Vector3) {
     const currentUpVector = transformNode.up;
     const rotationQuaternion = getTransformationQuaternion(currentUpVector, newUpVector);
-    if(transformNode.rotationQuaternion === null) transformNode.rotationQuaternion = rotationQuaternion;
+    if (transformNode.rotationQuaternion === null) transformNode.rotationQuaternion = rotationQuaternion;
     else transformNode.rotationQuaternion = rotationQuaternion.multiply(transformNode.rotationQuaternion);
 }

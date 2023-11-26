@@ -71,16 +71,19 @@ export class Terrain {
 
     private buildNextChunks(n: number) {
         // dequeue chunks to create
+        const promises: Promise<TerrainChunk>[] = [];
         for (let i = 0; i < n; i++) {
             const data = this.creationQueue.shift();
             if (data === undefined) break;
             const [position, scatterPerSquareMeter] = data;
-            this.createChunk(position, scatterPerSquareMeter);
+            promises.push(this.createChunk(position, scatterPerSquareMeter));
         }
+
+        return Promise.all(promises);
     }
 
-    public init(playerPosition: Vector3, renderDistance: number) {
+    public async init(playerPosition: Vector3, renderDistance: number) {
         this.update(playerPosition, renderDistance, 0);
-        this.buildNextChunks(this.creationQueue.length);
+        await this.buildNextChunks(this.creationQueue.length);
     }
 }

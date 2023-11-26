@@ -25,7 +25,7 @@ export function randomDownSample(matrixBuffer: Float32Array, stride: number): Fl
 }
 
 export async function createSquareMatrixBuffer(position: Vector3, size: number, resolution: number, engine: Engine) {
-    if(engine.getCaps().supportComputeShaders) {
+    if (engine.getCaps().supportComputeShaders) {
         return computeSquareScatterPoints(position, size, resolution, engine);
     }
 

@@ -12,15 +12,14 @@ import { ThinInstancePatch } from "./instancing/thinInstancePatch";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import "@babylonjs/materials";
-import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
-import "@babylonjs/core/Engines";
+import { createEngine } from "./utils/createEngine";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = await EngineFactory.CreateAsync(canvas, {});
+const engine = await createEngine(canvas);
 engine.displayLoadingUI();
 
 const scene = new Scene(engine);

@@ -10,12 +10,11 @@ import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 import { ThinInstancePatch } from "../instancing/thinInstancePatch";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { downSample } from "../utils/matrixBuffer";
-import { createTree } from "../utils/tree";
-import { createButterfly } from "../butterfly/butterfly";
-import { createButterflyMaterial } from "../butterfly/butterflyMaterial";
 import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
 import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
 import { InstancePatch } from "../instancing/instancePatch";
+import { computeVertexData } from "../compute/Terrain3dVertexData/computeVertexData";
+import { computeScatterPoints } from "../compute/scatterTerrain/computeScatterPoints";
 
 export enum Direction {
     FRONT,
@@ -45,134 +44,169 @@ function rotationFromDirection(direction: Direction) {
 
 export class PlanetChunk {
     readonly mesh: Mesh;
-    readonly instancesMatrixBuffer: Float32Array;
-    readonly alignedInstancesMatrixBuffer: Float32Array;
+    instancesMatrixBuffer: Float32Array | null = null;
+    alignedInstancesMatrixBuffer: Float32Array | null = null;
+
+    private readonly nbVerticesPerRow = 64;
+    private readonly size: number;
+    private readonly scatterPerSquareMeter = 300;
+    private readonly direction: Direction;
+
+    private vertexData: VertexData | null = null;
 
     constructor(direction: Direction, planetRadius: number, scene: Scene) {
         this.mesh = new Mesh("chunk", scene);
+        this.size = planetRadius * 2;
+        this.direction = direction;
+    }
 
-        const nbVerticesPerRow = 64;
+    async init(scene: Scene) {
+        if (scene.getEngine().getCaps().supportComputeShaders) {
+            const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, rotationFromDirection(this.direction), this.size, scene.getEngine());
+            vertexData.applyToMesh(this.mesh);
+            this.vertexData = vertexData;
+        } else {
+            const positions = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
+            const normals = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
+            const indices = new Uint32Array((this.nbVerticesPerRow - 1) * (this.nbVerticesPerRow - 1) * 6);
 
-        const positions = new Float32Array(nbVerticesPerRow * nbVerticesPerRow * 3);
-        const normals = new Float32Array(nbVerticesPerRow * nbVerticesPerRow * 3);
-        const indices = new Uint32Array((nbVerticesPerRow - 1) * (nbVerticesPerRow - 1) * 6);
+            const flatArea = this.size * this.size;
+            const maxNbInstances = Math.floor(flatArea * this.scatterPerSquareMeter * 2.0);
+            this.instancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+            this.alignedInstancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
 
-        const size = planetRadius * 2;
-        const stepSize = size / (nbVerticesPerRow - 1);
+            const rotationQuaternion = rotationFromDirection(this.direction);
 
-        const scatterPerSquareMeter = 300;
+            const chunkPosition = new Vector3(0, 0, -this.size / 2);
+            const rotatedChunkPosition = chunkPosition.applyRotationQuaternion(rotationQuaternion);
 
-        const flatArea = size * size;
-        const maxNbInstances = Math.floor(flatArea * scatterPerSquareMeter * 2.0);
-        this.instancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
-        this.alignedInstancesMatrixBuffer = new Float32Array(16 * maxNbInstances);
+            this.mesh.position = rotatedChunkPosition;
 
-        const rotationQuaternion = rotationFromDirection(direction);
+            const stepSize = this.size / (this.nbVerticesPerRow - 1);
+            let indexIndex = 0;
+            let instanceIndex = 0;
+            let excessInstanceNumber = 0;
+            for (let x = 0; x < this.nbVerticesPerRow; x++) {
+                for (let y = 0; y < this.nbVerticesPerRow; y++) {
+                    const index = x * this.nbVerticesPerRow + y;
+                    const positionX = x * stepSize - this.size / 2;
+                    const positionY = y * stepSize - this.size / 2;
+                    const positionZ = 0;
 
-        const chunkPosition = new Vector3(0, 0, -size / 2);
-        const rotatedChunkPosition = chunkPosition.applyRotationQuaternion(rotationQuaternion);
+                    const vertexPosition = chunkPosition.add(new Vector3(positionX, positionY, positionZ));
+                    vertexPosition.applyRotationQuaternionInPlace(rotationQuaternion);
 
-        this.mesh.position = rotatedChunkPosition;
+                    const vertexNormalToPlanet = vertexPosition.normalizeToNew();
 
-        let indexIndex = 0;
-        let instanceIndex = 0;
-        let excessInstanceNumber = 0;
-        for (let x = 0; x < nbVerticesPerRow; x++) {
-            for (let y = 0; y < nbVerticesPerRow; y++) {
-                const index = x * nbVerticesPerRow + y;
-                const positionX = x * stepSize - size / 2;
-                const positionY = y * stepSize - size / 2;
-                const positionZ = 0;
+                    vertexPosition.copyFrom(vertexNormalToPlanet.scale(this.size / 2));
 
-                const vertexPosition = chunkPosition.add(new Vector3(positionX, positionY, positionZ));
-                vertexPosition.applyRotationQuaternionInPlace(rotationQuaternion);
+                    const [height, gradient] = terrainFunction(vertexPosition);
 
-                const vertexNormalToPlanet = vertexPosition.normalizeToNew();
+                    const projectedGradient = gradient.subtract(vertexNormalToPlanet.scale(Vector3.Dot(gradient, vertexNormalToPlanet)));
 
-                vertexPosition.copyFrom(vertexNormalToPlanet.scale(planetRadius));
+                    vertexPosition.addInPlace(vertexNormalToPlanet.scale(height));
+                    vertexPosition.subtractInPlace(this.mesh.position);
 
-                const [height, gradient] = terrainFunction(vertexPosition);
+                    positions[3 * index + 0] = vertexPosition.x;
+                    positions[3 * index + 1] = vertexPosition.y;
+                    positions[3 * index + 2] = vertexPosition.z;
 
-                const projectedGradient = gradient.subtract(vertexNormalToPlanet.scale(Vector3.Dot(gradient, vertexNormalToPlanet)));
+                    const normal = vertexNormalToPlanet.subtract(projectedGradient).normalize();
 
-                vertexPosition.addInPlace(vertexNormalToPlanet.scale(height));
-                vertexPosition.subtractInPlace(this.mesh.position);
+                    normals[3 * index + 0] = normal.x;
+                    normals[3 * index + 1] = normal.y;
+                    normals[3 * index + 2] = normal.z;
 
-                positions[3 * index + 0] = vertexPosition.x;
-                positions[3 * index + 1] = vertexPosition.y;
-                positions[3 * index + 2] = vertexPosition.z;
+                    if (x == 0 || y == 0) continue;
 
-                const normal = vertexNormalToPlanet.subtract(projectedGradient).normalize();
+                    indices[indexIndex++] = index - 1;
+                    indices[indexIndex++] = index;
+                    indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
 
-                normals[3 * index + 0] = normal.x;
-                normals[3 * index + 1] = normal.y;
-                normals[3 * index + 2] = normal.z;
+                    const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - this.nbVerticesPerRow - 1);
+                    const nbInstances1 = Math.floor(triangleArea1 * this.scatterPerSquareMeter + excessInstanceNumber);
+                    excessInstanceNumber = triangleArea1 * this.scatterPerSquareMeter + excessInstanceNumber - nbInstances1;
+                    instanceIndex = scatterInTriangle(
+                        this.mesh.position,
+                        nbInstances1,
+                        instanceIndex,
+                        this.instancesMatrixBuffer,
+                        this.alignedInstancesMatrixBuffer,
+                        positions,
+                        normals,
+                        vertexNormalToPlanet,
+                        index - 1,
+                        index,
+                        index - this.nbVerticesPerRow - 1
+                    );
+                    if (instanceIndex >= maxNbInstances) {
+                        throw new Error("Too many instances");
+                    }
 
-                if (x == 0 || y == 0) continue;
+                    indices[indexIndex++] = index;
+                    indices[indexIndex++] = index - this.nbVerticesPerRow;
+                    indices[indexIndex++] = index - this.nbVerticesPerRow - 1;
 
-                indices[indexIndex++] = index - 1;
-                indices[indexIndex++] = index;
-                indices[indexIndex++] = index - nbVerticesPerRow - 1;
-
-                const triangleArea1 = triangleAreaFromBuffer(positions, index - 1, index, index - nbVerticesPerRow - 1);
-                const nbInstances1 = Math.floor(triangleArea1 * scatterPerSquareMeter + excessInstanceNumber);
-                excessInstanceNumber = triangleArea1 * scatterPerSquareMeter + excessInstanceNumber - nbInstances1;
-                instanceIndex = scatterInTriangle(
-                    this.mesh.position,
-                    nbInstances1,
-                    instanceIndex,
-                    this.instancesMatrixBuffer,
-                    this.alignedInstancesMatrixBuffer,
-                    positions,
-                    normals,
-                    vertexNormalToPlanet,
-                    index - 1,
-                    index,
-                    index - nbVerticesPerRow - 1
-                );
-                if (instanceIndex >= maxNbInstances) {
-                    throw new Error("Too many instances");
-                }
-
-                indices[indexIndex++] = index;
-                indices[indexIndex++] = index - nbVerticesPerRow;
-                indices[indexIndex++] = index - nbVerticesPerRow - 1;
-
-                const triangleArea2 = triangleAreaFromBuffer(positions, index, index - nbVerticesPerRow, index - nbVerticesPerRow - 1);
-                const nbInstances2 = Math.floor(triangleArea2 * scatterPerSquareMeter + excessInstanceNumber);
-                excessInstanceNumber = triangleArea2 * scatterPerSquareMeter + excessInstanceNumber - nbInstances2;
-                instanceIndex = scatterInTriangle(
-                    this.mesh.position,
-                    nbInstances2,
-                    instanceIndex,
-                    this.instancesMatrixBuffer,
-                    this.alignedInstancesMatrixBuffer,
-                    positions,
-                    normals,
-                    vertexNormalToPlanet,
-                    index,
-                    index - nbVerticesPerRow,
-                    index - nbVerticesPerRow - 1
-                );
-                if (instanceIndex >= maxNbInstances) {
-                    throw new Error("Too many instances");
+                    const triangleArea2 = triangleAreaFromBuffer(positions, index, index - this.nbVerticesPerRow, index - this.nbVerticesPerRow - 1);
+                    const nbInstances2 = Math.floor(triangleArea2 * this.scatterPerSquareMeter + excessInstanceNumber);
+                    excessInstanceNumber = triangleArea2 * this.scatterPerSquareMeter + excessInstanceNumber - nbInstances2;
+                    instanceIndex = scatterInTriangle(
+                        this.mesh.position,
+                        nbInstances2,
+                        instanceIndex,
+                        this.instancesMatrixBuffer,
+                        this.alignedInstancesMatrixBuffer,
+                        positions,
+                        normals,
+                        vertexNormalToPlanet,
+                        index,
+                        index - this.nbVerticesPerRow,
+                        index - this.nbVerticesPerRow - 1
+                    );
+                    if (instanceIndex >= maxNbInstances) {
+                        throw new Error("Too many instances");
+                    }
                 }
             }
+
+            const vertexData = new VertexData();
+            vertexData.positions = positions;
+            vertexData.indices = indices;
+            vertexData.normals = normals;
+            this.vertexData = vertexData;
+
+            vertexData.applyToMesh(this.mesh);
         }
-
-        const vertexData = new VertexData();
-        vertexData.positions = positions;
-        vertexData.indices = indices;
-        vertexData.normals = normals;
-
-        vertexData.applyToMesh(this.mesh);
 
         new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
 
-        this.scatterAssets(scene);
+        await this.scatterAssets(scene);
     }
 
-    scatterAssets(scene: Scene) {
+    async scatterAssets(scene: Scene) {
+        if (scene.getEngine().getCaps().supportComputeShaders) {
+            if (this.vertexData === null) {
+                throw new Error("Vertex data is null");
+            }
+
+            const flatArea = this.size * this.size;
+            [this.instancesMatrixBuffer, this.alignedInstancesMatrixBuffer] = await computeScatterPoints(
+                this.vertexData,
+                this.mesh.position,
+                2 * flatArea,
+                this.nbVerticesPerRow,
+                this.scatterPerSquareMeter,
+                scene.getEngine()
+            );
+        }
+
+        if (this.instancesMatrixBuffer === null) {
+            throw new Error("Instances matrix buffer is null");
+        }
+        if (this.alignedInstancesMatrixBuffer === null) {
+            throw new Error("Aligned instance matrices are null");
+        }
+
         const grassBlade = createGrassBlade(scene, 2);
         grassBlade.isVisible = false;
         grassBlade.material = createGrassMaterial(scene.lights[0] as DirectionalLight, scene);
@@ -180,30 +214,13 @@ export class PlanetChunk {
         const patch = new ThinInstancePatch(this.mesh.position, this.alignedInstancesMatrixBuffer);
         patch.createInstances(grassBlade);
 
-        /*createTree(scene).then((tree) => {
-            tree.scaling.scaleInPlace(3);
-            tree.position.y = -1;
-            tree.bakeCurrentTransformIntoVertices();
-            tree.isVisible = false;
-            const treePatch = new ThinInstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 20000));
-            treePatch.createInstances(tree);
-        });*/
-
         const cube = MeshBuilder.CreateBox("cube", { size: 1 }, scene);
         cube.position.y = 0.5;
         cube.bakeCurrentTransformIntoVertices();
         cube.isVisible = false;
         cube.checkCollisions = true;
-        const cubePatch = new InstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 5000));
+        const cubePatch = new InstancePatch(this.mesh.position, downSample(this.alignedInstancesMatrixBuffer, 5000));
         cubePatch.createInstances(cube);
-
-        /*const butterfly = createButterfly(scene);
-        //butterfly.position.y = 1;
-        //butterfly.bakeCurrentTransformIntoVertices();
-        butterfly.material = createButterflyMaterial(scene.lights[0] as DirectionalLight, scene);
-        butterfly.isVisible = false;
-        const butterflyPatch = new ThinInstancePatch(this.mesh.position, downSample(this.instancesMatrixBuffer, 1000));
-        butterflyPatch.createInstances(butterfly);*/
     }
 }
 

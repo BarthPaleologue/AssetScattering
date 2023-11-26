@@ -20,17 +20,14 @@ import "@babylonjs/core/Physics/physicsEngineComponent";
 import HavokPhysics from "@babylonjs/havok";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
 import { createCharacterController } from "./utils/character";
-import { setUpVector } from "./utils/algebra";
-import { EngineFactory } from "@babylonjs/core/Engines/engineFactory";
-import "@babylonjs/core/Engines";
-
+import { createEngine } from "./utils/createEngine";
 
 // Init babylonjs
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-const engine = await EngineFactory.CreateAsync(canvas, {});
+const engine = await createEngine(canvas);
 engine.displayLoadingUI();
 
 if (engine.getCaps().supportComputeShaders) {
@@ -59,18 +56,10 @@ ambient.intensity = 0.2;
 
 createSkybox(scene, light.direction.scale(-1));
 
-const character = await createCharacterController(scene, camera);
-scene.onAfterPhysicsObservable.add(() => {
-   setUpVector(character, character.position.subtract(planet.node.position).normalize());
-
-   camera.upVector = character.up;
-
-   character.computeWorldMatrix(true);
-   camera.getViewMatrix(true);
-});
+await createCharacterController(scene, camera, true);
 
 // Interesting part starts here
-const planet = new Planet(planetRadius, scene);
+new Planet(planetRadius, scene);
 
 document.addEventListener("keypress", (e) => {
     if (e.key === "p") {
@@ -79,7 +68,9 @@ document.addEventListener("keypress", (e) => {
     }
 });
 
-engine.loadingScreen.hideLoadingUI();
+scene.executeWhenReady(() => {
+    engine.loadingScreen.hideLoadingUI();
+});
 
 window.addEventListener("resize", () => {
     engine.resize();

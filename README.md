@@ -7,6 +7,8 @@
 
 A procedural asset scattering system built with BabylonJS. It can render millions of blades of grass with LoD and cute butterflies.
 
+The instance buffers are generated using compute shaders when available, otherwise they are generated on the CPU. To see the CPU only version, checkout the branch `cpu`.
+
 ## Online demo
 
 Main demo with procedural terrain, lod, collisions, butterflies and trees: [here](https://barthpaleologue.github.io/AssetScattering/)
@@ -18,6 +20,10 @@ Experimentation on a spherical world: [here](https://barthpaleologue.github.io/A
 Minimal example of a dense patch of grass: [here](https://barthpaleologue.github.io/AssetScattering/minimal.html)
 
 If you can't run the demo, there is a video on YouTube [here](https://www.youtube.com/watch?v=0I5Kd784K6A).
+
+### WebGPU
+
+All demos are WebGPU compatible, simply add `?webgpu` to the URL to use WebGPU instead of WebGL. If your browser doesn't support WebGPU, it will throw an error in the console.
 
 ## How to use
 

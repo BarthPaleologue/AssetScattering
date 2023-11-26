@@ -5,10 +5,7 @@ import { StorageBuffer } from "@babylonjs/core/Buffers/storageBuffer";
 import { UniformBuffer } from "@babylonjs/core/Materials/uniformBuffer";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 
-export async function computeSquareScatterPoints(
-    position: Vector3, size: number, resolution: number,
-    engine: Engine
-): Promise<Float32Array> {
+export async function computeSquareScatterPoints(position: Vector3, size: number, resolution: number, engine: Engine): Promise<Float32Array> {
     const computeShader = new ComputeShader(
         "scatter",
         engine,
@@ -45,9 +42,7 @@ export async function computeSquareScatterPoints(
             .dispatchWhenReady(resolution, resolution, 1)
             .then(async () => {
                 try {
-                    const [instanceMatricesBufferView] = await Promise.all([
-                        instanceMatricesBuffer.read()
-                    ]);
+                    const [instanceMatricesBufferView] = await Promise.all([instanceMatricesBuffer.read()]);
 
                     const instanceMatrices = new Float32Array(instanceMatricesBufferView.buffer);
                     instanceMatricesBuffer.dispose();
