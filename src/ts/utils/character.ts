@@ -15,6 +15,28 @@ import { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResu
 import { PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { setUpVector } from "./algebra";
+import { AnimationGroup } from "@babylonjs/core";
+
+class AnimationGroupWrapper {
+    name: string;
+    group: AnimationGroup;
+    weight: number;
+
+    constructor(name: string, group: AnimationGroup, startingWeight: number) {
+        this.name = name;
+        this.weight = startingWeight;
+
+        this.group = group;
+        this.group.play(true);
+        this.group.setWeightForAllAnimatables(startingWeight);
+    }
+
+    moveTowardsWeight(targetWeight: number, deltaTime: number) {
+        this.weight = Math.min(Math.max(this.weight + deltaTime * Math.sign(targetWeight - this.weight), 0), 1);
+        this.group.setWeightForAllAnimatables(this.weight);
+    }
+}
+
 
 export async function createCharacterController(scene: Scene, camera: ArcRotateCamera, planet = false): Promise<AbstractMesh> {
     const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
@@ -36,16 +58,30 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
     const heroSpeedBackwards = 1.2;
     const heroRotationSpeed = 6;
 
-    let animating = true;
+    //let animating = true;
 
-    const walkAnim = scene.getAnimationGroupByName("Walking");
-    if (walkAnim === null) throw new Error("'Walking' animation not found");
-    const walkBackAnim = scene.getAnimationGroupByName("WalkingBackwards");
-    if (walkBackAnim === null) throw new Error("'WalkingBackwards' animation not found");
-    const idleAnim = scene.getAnimationGroupByName("Idle");
-    if (idleAnim === null) throw new Error("'Idle' animation not found");
-    const sambaAnim = scene.getAnimationGroupByName("SambaDancing");
-    if (sambaAnim === null) throw new Error("'Samba' animation not found");
+    const walkAnimGroup = scene.getAnimationGroupByName("Walking");
+    if (walkAnimGroup === null) throw new Error("'Walking' animation not found");
+    const walkAnim = new AnimationGroupWrapper("Walking", walkAnimGroup, 0);
+
+    const walkBackAnimGroup = scene.getAnimationGroupByName("WalkingBackwards");
+    if (walkBackAnimGroup === null) throw new Error("'WalkingBackwards' animation not found");
+    const walkBackAnim = new AnimationGroupWrapper("WalkingBackwards", walkBackAnimGroup, 0);
+
+    const idleAnimGroup = scene.getAnimationGroupByName("Idle");
+    if (idleAnimGroup === null) throw new Error("'Idle' animation not found");
+    const idleAnim = new AnimationGroupWrapper("Idle", idleAnimGroup, 1);
+
+    const sambaAnimGroup = scene.getAnimationGroupByName("SambaDancing");
+    if (sambaAnimGroup === null) throw new Error("'Samba' animation not found");
+    const sambaAnim = new AnimationGroupWrapper("SambaDancing", sambaAnimGroup, 0);
+
+    let targetAnim = idleAnim;
+    const nonIdleAnimations = [walkAnim, walkBackAnim, sambaAnim];
+
+    function setTargetAnimation(animation: AnimationGroupWrapper) {
+        targetAnim = animation;
+    }
 
     const inputMap: Map<string, boolean> = new Map<string, boolean>();
     scene.actionManager = new ActionManager(scene);
@@ -62,63 +98,65 @@ export async function createCharacterController(scene: Scene, camera: ArcRotateC
 
     const raycastResult = new PhysicsRaycastResult();
 
-    //FIXME when the position is 0 then character cannot be rotated (this makes no sense)
-    hero.position = new Vector3(0, 0.000000001, 0);
-
+    if(planet) {
+        //FIXME when the position is 0 then character cannot be rotated (this makes no sense)
+        hero.position = new Vector3(0, 0.000000001, 0);
+    }
+    
     //Rendering loop (executed for everyframe)
     scene.onBeforePhysicsObservable.add(() => {
         const deltaTime = scene.getEngine().getDeltaTime() / 1000;
         let keydown = false;
-        //Manage the movements of the character (e.g. position, direction)
+
+        if (walkAnim.weight > 0.0) {
+            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed * deltaTime * walkAnim.weight));
+        }
+
+        if (walkBackAnim.weight > 0.0) {
+            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards * deltaTime * walkBackAnim.weight));
+        }
+
+        const isWalking = walkAnim.weight > 0.0 || walkBackAnim.weight > 0.0;
+
+        // Translation
         if (inputMap.get("z") || inputMap.get("w")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed * deltaTime));
+            setTargetAnimation(walkAnim);
+            keydown = true;
+        } else if (inputMap.get("s")) {
+            setTargetAnimation(walkBackAnim);
             keydown = true;
         }
-        if (inputMap.get("s")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards * deltaTime));
-            keydown = true;
-        }
-        if (inputMap.get("q") || inputMap.get("a")) {
+
+        // Rotation
+        if ((inputMap.get("q") || inputMap.get("a")) && isWalking) {
             hero.rotate(Vector3.Up(), -heroRotationSpeed * deltaTime);
             keydown = true;
-        }
-        if (inputMap.get("d")) {
+        } else if (inputMap.get("d") && isWalking) {
             hero.rotate(Vector3.Up(), heroRotationSpeed * deltaTime);
             keydown = true;
         }
+
+        // Samba!
         if (inputMap.get("b")) {
+            setTargetAnimation(sambaAnim);
             keydown = true;
         }
 
-        //Manage animations to be played
-        if (keydown) {
-            if (!animating) {
-                animating = true;
-                if (inputMap.get("s")) {
-                    //Walk backwards
-                    walkBackAnim.start(true, 1, walkBackAnim.from, walkBackAnim.to, false);
-                } else if (inputMap.get("b")) {
-                    //Samba!
-                    sambaAnim.start(true, 1, sambaAnim.from, sambaAnim.to, false);
-                } else {
-                    //Walk
-                    walkAnim.start(true, 1, walkAnim.from, walkAnim.to, true);
-                }
-            }
-        } else {
-            if (animating) {
-                //Default animation is idle when no key is down
-                idleAnim.start(true, 1, idleAnim.from, idleAnim.to, false);
-
-                //Stop all animations besides Idle Anim when no key is down
-                sambaAnim.stop();
-                walkAnim.stop();
-                walkBackAnim.stop();
-
-                //Ensure animation are played only once per rendering loop
-                animating = false;
-            }
+        if (!keydown) {
+            setTargetAnimation(idleAnim);
         }
+
+        let weightSum = 0;
+        for (const animation of nonIdleAnimations) {
+            if (animation === targetAnim) {
+                animation.moveTowardsWeight(1, deltaTime);
+            } else {
+                animation.moveTowardsWeight(0, deltaTime);
+            }
+            weightSum += animation.weight;
+        }
+
+        idleAnim.moveTowardsWeight(1 - weightSum, deltaTime);
 
         if (planet) {
             setUpVector(hero, hero.position.normalizeToNew());
