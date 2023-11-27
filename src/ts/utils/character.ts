@@ -15,124 +15,167 @@ import { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResu
 import { PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
 import { setUpVector } from "./algebra";
+import { AnimationGroup } from "@babylonjs/core";
 
-export async function createCharacterController(scene: Scene, camera: ArcRotateCamera, planet = false): Promise<AbstractMesh> {
-    const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
+class AnimationGroupWrapper {
+    name: string;
+    group: AnimationGroup;
+    weight: number;
 
-    const hero = result.meshes[0];
+    constructor(name: string, group: AnimationGroup, startingWeight: number) {
+        this.name = name;
+        this.weight = startingWeight;
 
-    const cameraAttachPoint = new TransformNode("cameraAttachPoint", scene);
-    cameraAttachPoint.parent = hero;
-    cameraAttachPoint.position = new Vector3(0, 1.5, 0);
+        this.group = group;
+        this.group.play(true);
+        this.group.setWeightForAllAnimatables(startingWeight);
+    }
 
-    camera.lockedTarget = cameraAttachPoint;
-    camera.wheelPrecision = 200;
-    camera.lowerRadiusLimit = 3;
-    camera.upperBetaLimit = 3.14 / 2;
+    moveTowardsWeight(targetWeight: number, deltaTime: number) {
+        this.weight = Math.min(Math.max(this.weight + deltaTime * Math.sign(targetWeight - this.weight), 0), 1);
+        this.group.setWeightForAllAnimatables(this.weight);
+    }
+}
 
-    //Scale the model down
-    //Hero character variables
-    const heroSpeed = 1.8;
-    const heroSpeedBackwards = 1.2;
-    const heroRotationSpeed = 6;
+export class CharacterController {
+    readonly mesh: AbstractMesh;
 
-    let animating = true;
+    readonly heroSpeed = 1.8;
+    readonly heroSpeedBackwards = 1.2;
+    readonly heroRotationSpeed = 6;
 
-    const walkAnim = scene.getAnimationGroupByName("Walking");
-    if (walkAnim === null) throw new Error("'Walking' animation not found");
-    const walkBackAnim = scene.getAnimationGroupByName("WalkingBackwards");
-    if (walkBackAnim === null) throw new Error("'WalkingBackwards' animation not found");
-    const idleAnim = scene.getAnimationGroupByName("Idle");
-    if (idleAnim === null) throw new Error("'Idle' animation not found");
-    const sambaAnim = scene.getAnimationGroupByName("SambaDancing");
-    if (sambaAnim === null) throw new Error("'Samba' animation not found");
+    readonly idleAnim: AnimationGroupWrapper;
+    readonly nonIdleAnimations: AnimationGroupWrapper[];
 
-    const inputMap: Map<string, boolean> = new Map<string, boolean>();
-    scene.actionManager = new ActionManager(scene);
-    scene.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (e) => {
-            inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
-        })
-    );
-    scene.actionManager.registerAction(
-        new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
-            inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
-        })
-    );
+    private constructor(characterMesh: AbstractMesh, scene: Scene) {
+        this.mesh = characterMesh;
 
-    const raycastResult = new PhysicsRaycastResult();
+        const walkAnimGroup = scene.getAnimationGroupByName("Walking");
+        if (walkAnimGroup === null) throw new Error("'Walking' animation not found");
+        const walkAnim = new AnimationGroupWrapper("Walking", walkAnimGroup, 0);
 
-    //FIXME when the position is 0 then character cannot be rotated (this makes no sense)
-    hero.position = new Vector3(0, 0.000000001, 0);
+        const walkBackAnimGroup = scene.getAnimationGroupByName("WalkingBackwards");
+        if (walkBackAnimGroup === null) throw new Error("'WalkingBackwards' animation not found");
+        const walkBackAnim = new AnimationGroupWrapper("WalkingBackwards", walkBackAnimGroup, 0);
 
-    //Rendering loop (executed for everyframe)
-    scene.onBeforePhysicsObservable.add(() => {
-        const deltaTime = scene.getEngine().getDeltaTime() / 1000;
-        let keydown = false;
-        //Manage the movements of the character (e.g. position, direction)
-        if (inputMap.get("z") || inputMap.get("w")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(heroSpeed * deltaTime));
-            keydown = true;
-        }
-        if (inputMap.get("s")) {
-            hero.moveWithCollisions(hero.forward.scaleInPlace(-heroSpeedBackwards * deltaTime));
-            keydown = true;
-        }
-        if (inputMap.get("q") || inputMap.get("a")) {
-            hero.rotate(Vector3.Up(), -heroRotationSpeed * deltaTime);
-            keydown = true;
-        }
-        if (inputMap.get("d")) {
-            hero.rotate(Vector3.Up(), heroRotationSpeed * deltaTime);
-            keydown = true;
-        }
-        if (inputMap.get("b")) {
-            keydown = true;
+        const idleAnimGroup = scene.getAnimationGroupByName("Idle");
+        if (idleAnimGroup === null) throw new Error("'Idle' animation not found");
+        this.idleAnim = new AnimationGroupWrapper("Idle", idleAnimGroup, 1);
+
+        const sambaAnimGroup = scene.getAnimationGroupByName("SambaDancing");
+        if (sambaAnimGroup === null) throw new Error("'Samba' animation not found");
+        const sambaAnim = new AnimationGroupWrapper("SambaDancing", sambaAnimGroup, 0);
+
+        let targetAnim = this.idleAnim;
+        this.nonIdleAnimations = [walkAnim, walkBackAnim, sambaAnim];
+
+
+        function setTargetAnimation(animation: AnimationGroupWrapper) {
+            targetAnim = animation;
         }
 
-        //Manage animations to be played
-        if (keydown) {
-            if (!animating) {
-                animating = true;
-                if (inputMap.get("s")) {
-                    //Walk backwards
-                    walkBackAnim.start(true, 1, walkBackAnim.from, walkBackAnim.to, false);
-                } else if (inputMap.get("b")) {
-                    //Samba!
-                    sambaAnim.start(true, 1, sambaAnim.from, sambaAnim.to, false);
+        const inputMap: Map<string, boolean> = new Map<string, boolean>();
+        scene.actionManager = new ActionManager(scene);
+        scene.actionManager.registerAction(
+            new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (e) => {
+                inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+            })
+        );
+        scene.actionManager.registerAction(
+            new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
+                inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+            })
+        );
+
+        const raycastResult = new PhysicsRaycastResult();
+
+        //Rendering loop (executed for everyframe)
+        scene.onBeforePhysicsObservable.add(() => {
+            const deltaTime = scene.getEngine().getDeltaTime() / 1000;
+            let keydown = false;
+
+            if (walkAnim.weight > 0.0) {
+                characterMesh.moveWithCollisions(characterMesh.forward.scaleInPlace(this.heroSpeed * deltaTime * walkAnim.weight));
+            }
+
+            if (walkBackAnim.weight > 0.0) {
+                characterMesh.moveWithCollisions(characterMesh.forward.scaleInPlace(-this.heroSpeedBackwards * deltaTime * walkBackAnim.weight));
+            }
+
+            const isWalking = walkAnim.weight > 0.0 || walkBackAnim.weight > 0.0;
+
+            // Translation
+            if (inputMap.get("z") || inputMap.get("w")) {
+                setTargetAnimation(walkAnim);
+                keydown = true;
+            } else if (inputMap.get("s")) {
+                setTargetAnimation(walkBackAnim);
+                keydown = true;
+            }
+
+            // Rotation
+            if ((inputMap.get("q") || inputMap.get("a")) && isWalking) {
+                characterMesh.rotate(Vector3.Up(), -this.heroRotationSpeed * deltaTime);
+                keydown = true;
+            } else if (inputMap.get("d") && isWalking) {
+                characterMesh.rotate(Vector3.Up(), this.heroRotationSpeed * deltaTime);
+                keydown = true;
+            }
+
+            // Samba!
+            if (inputMap.get("b")) {
+                setTargetAnimation(sambaAnim);
+                keydown = true;
+            }
+
+            if (!keydown) {
+                setTargetAnimation(this.idleAnim);
+            }
+
+            let weightSum = 0;
+            for (const animation of this.nonIdleAnimations) {
+                if (animation === targetAnim) {
+                    animation.moveTowardsWeight(1, deltaTime);
                 } else {
-                    //Walk
-                    walkAnim.start(true, 1, walkAnim.from, walkAnim.to, true);
+                    animation.moveTowardsWeight(0, deltaTime);
                 }
+                weightSum += animation.weight;
             }
-        } else {
-            if (animating) {
-                //Default animation is idle when no key is down
-                idleAnim.start(true, 1, idleAnim.from, idleAnim.to, false);
 
-                //Stop all animations besides Idle Anim when no key is down
-                sambaAnim.stop();
-                walkAnim.stop();
-                walkBackAnim.stop();
+            this.idleAnim.moveTowardsWeight(Math.min(Math.max(1 - weightSum, 0.0), 1.0), deltaTime);
 
-                //Ensure animation are played only once per rendering loop
-                animating = false;
+            // downward raycast
+            const start = characterMesh.position.add(characterMesh.up.scale(50));
+            const end = characterMesh.position.add(characterMesh.up.scale(-50));
+            (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
+            if (raycastResult.hasHit) {
+                characterMesh.position = raycastResult.hitPointWorld.add(characterMesh.up.scale(0.01));
             }
-        }
+        });
+    }
 
+    static async createAsync(scene: Scene, camera: ArcRotateCamera, planet = false): Promise<CharacterController> {
+        const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
+
+        const hero = result.meshes[0];
         if (planet) {
-            setUpVector(hero, hero.position.normalizeToNew());
-            camera.upVector = hero.up;
+            //FIXME when the position is 0 then character cannot be rotated (this makes no sense)
+            hero.position = new Vector3(0, 0.000000001, 0);
+            scene.onBeforeRenderObservable.add(() => {
+                setUpVector(hero, hero.position.normalizeToNew());
+                camera.upVector = hero.up;
+            });
         }
 
-        // downward raycast
-        const start = hero.position.add(hero.up.scale(50));
-        const end = hero.position.add(hero.up.scale(-50));
-        (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
-        if (raycastResult.hasHit) {
-            hero.position = raycastResult.hitPointWorld.add(hero.up.scale(0.01));
-        }
-    });
+        const cameraAttachPoint = new TransformNode("cameraAttachPoint", scene);
+        cameraAttachPoint.parent = hero;
+        cameraAttachPoint.position = new Vector3(0, 1.5, 0);
 
-    return hero;
+        camera.lockedTarget = cameraAttachPoint;
+        camera.wheelPrecision = 200;
+        camera.lowerRadiusLimit = 3;
+        camera.upperBetaLimit = 3.14 / 2;
+
+        return new CharacterController(hero, scene);
+    }
 }

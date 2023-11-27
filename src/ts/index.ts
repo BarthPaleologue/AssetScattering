@@ -17,7 +17,7 @@ import { createGrassMaterial } from "./grass/grassMaterial";
 
 import { createSkybox } from "./utils/skybox";
 import { UI } from "./utils/ui";
-import { createCharacterController } from "./utils/character";
+import { CharacterController } from "./utils/character";
 import { ThinInstancePatch } from "./instancing/thinInstancePatch";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
@@ -76,7 +76,7 @@ const camera = new ArcRotateCamera("camera", -3.14 / 3, 1.4, 6, Vector3.Zero(), 
 camera.minZ = 0.1;
 camera.attachControl();
 
-const character = await createCharacterController(scene, camera);
+const character = await CharacterController.createAsync(scene, camera);
 
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
@@ -88,7 +88,7 @@ highQualityGrassBlade.isVisible = false;
 const lowQualityGrassBlade = createGrassBlade(scene, 1);
 lowQualityGrassBlade.isVisible = false;
 
-const grassMaterial = createGrassMaterial(light, scene, character);
+const grassMaterial = createGrassMaterial(light, scene, character.mesh);
 highQualityGrassBlade.material = grassMaterial;
 lowQualityGrassBlade.material = grassMaterial;
 
@@ -103,7 +103,7 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 1;
 butterfly.isVisible = false;
 
-const butterflyMaterial = createButterflyMaterial(light, scene, character);
+const butterflyMaterial = createButterflyMaterial(light, scene, character.mesh);
 butterfly.material = butterflyMaterial;
 
 const tree = await createTree(scene);
@@ -179,7 +179,7 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
 });
 
 const renderDistance = 6;
-await terrain.init(character.position, renderDistance);
+await terrain.init(character.mesh.position, renderDistance);
 
 grassManager.initInstances();
 cubeManager.initInstances();
@@ -208,7 +208,7 @@ scene.onBeforeRenderObservable.add(() => {
 
     // do not update terrain every frame to prevent lag spikes
     if (terrainUpdateCounter % 30 === 0) {
-        terrain.update(character.position, renderDistance, 1);
+        terrain.update(character.mesh.position, renderDistance, 1);
         terrainUpdateCounter = 0;
     }
 });

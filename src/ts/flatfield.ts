@@ -12,7 +12,7 @@ import { createGrassMaterial } from "./grass/grassMaterial";
 
 import { createSkybox } from "./utils/skybox";
 import { UI } from "./utils/ui";
-import { createCharacterController } from "./utils/character";
+import { CharacterController } from "./utils/character";
 import { ThinInstancePatch } from "./instancing/thinInstancePatch";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
@@ -70,7 +70,7 @@ new Sound("wind", windSound, scene, null, {
     autoplay: true
 });
 
-const character = await createCharacterController(scene, camera);
+const character = await CharacterController.createAsync(scene, camera);
 
 // Interesting part starts here
 const highQualityGrassBlade = createGrassBlade(scene, 4);
@@ -78,7 +78,7 @@ highQualityGrassBlade.isVisible = false;
 const lowQualityGrassBlade = createGrassBlade(scene, 1);
 lowQualityGrassBlade.isVisible = false;
 
-const material = createGrassMaterial(light, scene, character);
+const material = createGrassMaterial(light, scene, character.mesh);
 highQualityGrassBlade.material = material;
 lowQualityGrassBlade.material = material;
 
@@ -112,7 +112,7 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 1;
 butterfly.isVisible = false;
 
-const butterflyMaterial = createButterflyMaterial(light, scene, character);
+const butterflyMaterial = createButterflyMaterial(light, scene, character.mesh);
 butterfly.material = butterflyMaterial;
 
 const butterflyPatch = await ThinInstancePatch.CreateSquare(Vector3.Zero(), patchSize * fieldRadius * 2, 100, engine);

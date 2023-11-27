@@ -19,7 +19,7 @@ import "@babylonjs/core/Collisions/collisionCoordinator";
 import "@babylonjs/core/Physics/physicsEngineComponent";
 import HavokPhysics from "@babylonjs/havok";
 import { HavokPlugin } from "@babylonjs/core/Physics/v2/Plugins/havokPlugin";
-import { createCharacterController } from "./utils/character";
+import { CharacterController } from "./utils/character";
 import { createEngine } from "./utils/createEngine";
 
 // Init babylonjs
@@ -56,7 +56,7 @@ ambient.intensity = 0.2;
 
 createSkybox(scene, light.direction.scale(-1));
 
-await createCharacterController(scene, camera, true);
+await CharacterController.createAsync(scene, camera, true);
 
 // Interesting part starts here
 new Planet(planetRadius, scene);
