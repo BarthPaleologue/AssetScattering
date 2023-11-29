@@ -4,12 +4,8 @@ struct Params {
     position: vec3<f32>,
 };
 
-struct FloatArray {
-  elements : array<f32>,
-};
-
-@group(0) @binding(0) var<storage, read_write> instanceMatrices : FloatArray;
-@group(0) @binding(1) var<uniform> params : Params;
+@group(0) @binding(0) var<storage, read_write> instanceMatrices: array<f32>;
+@group(0) @binding(1) var<uniform> params: Params;
 
 // adapted from https://www.shadertoy.com/view/4djSRW
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -35,11 +31,11 @@ fn rotation_y(angle: f32) -> mat3x3<f32> {
 }
 
 @compute @workgroup_size(1,1,1)
-fn main(@builtin(global_invocation_id) id : vec3<u32>) {
-    let x : f32 = f32(id.x);
-    let y : f32 = f32(id.y);
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let x: f32 = f32(id.x);
+    let y: f32 = f32(id.y);
 
-    let index : u32 = id.x + id.y * params.resolution;
+    let index: u32 = id.x + id.y * params.resolution;
 
     let cellSize = params.size / f32(params.resolution);
     let randomCellPosition = hash22(vec2<f32>(x, y)) * cellSize;
@@ -62,23 +58,23 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>) {
     let offset = index * 16u;
 
     // write instance matrix to buffer
-    instanceMatrices.elements[offset + 0] = instanceMatrix[0][0];
-    instanceMatrices.elements[offset + 1] = instanceMatrix[1][0];
-    instanceMatrices.elements[offset + 2] = instanceMatrix[2][0];
-    instanceMatrices.elements[offset + 3] = instanceMatrix[3][0];
+    instanceMatrices[offset + 0] = instanceMatrix[0][0];
+    instanceMatrices[offset + 1] = instanceMatrix[1][0];
+    instanceMatrices[offset + 2] = instanceMatrix[2][0];
+    instanceMatrices[offset + 3] = instanceMatrix[3][0];
 
-    instanceMatrices.elements[offset + 4] = instanceMatrix[0][1];
-    instanceMatrices.elements[offset + 5] = instanceMatrix[1][1];
-    instanceMatrices.elements[offset + 6] = instanceMatrix[2][1];
-    instanceMatrices.elements[offset + 7] = instanceMatrix[3][1];
+    instanceMatrices[offset + 4] = instanceMatrix[0][1];
+    instanceMatrices[offset + 5] = instanceMatrix[1][1];
+    instanceMatrices[offset + 6] = instanceMatrix[2][1];
+    instanceMatrices[offset + 7] = instanceMatrix[3][1];
 
-    instanceMatrices.elements[offset + 8] = instanceMatrix[0][2];
-    instanceMatrices.elements[offset + 9] = instanceMatrix[1][2];
-    instanceMatrices.elements[offset + 10] = instanceMatrix[2][2];
-    instanceMatrices.elements[offset + 11] = instanceMatrix[3][2];
+    instanceMatrices[offset + 8] = instanceMatrix[0][2];
+    instanceMatrices[offset + 9] = instanceMatrix[1][2];
+    instanceMatrices[offset + 10] = instanceMatrix[2][2];
+    instanceMatrices[offset + 11] = instanceMatrix[3][2];
 
-    instanceMatrices.elements[offset + 12] = instanceMatrix[0][3];
-    instanceMatrices.elements[offset + 13] = instanceMatrix[1][3];
-    instanceMatrices.elements[offset + 14] = instanceMatrix[2][3];
-    instanceMatrices.elements[offset + 15] = instanceMatrix[3][3];
+    instanceMatrices[offset + 12] = instanceMatrix[0][3];
+    instanceMatrices[offset + 13] = instanceMatrix[1][3];
+    instanceMatrices[offset + 14] = instanceMatrix[2][3];
+    instanceMatrices[offset + 15] = instanceMatrix[3][3];
 }

@@ -1,28 +1,21 @@
 struct Params {
-    scatterPerSquareMeter : f32,
-    nbVerticesPerRow : u32,
+    scatterPerSquareMeter: f32,
+    nbVerticesPerRow: u32,
     position: vec3<f32>
 };
 
-struct FloatArray {
-  elements : array<f32>,
-};
-struct UIntArray {
-  elements : array<atomic<u32>>,
-};
+@group(0) @binding(0) var<storage, read> positions: array<f32>;
+@group(0) @binding(1) var<storage, read> normals: array<f32>;
+@group(0) @binding(2) var<storage, read_write> indices: array<u32>;
+@group(0) @binding(3) var<storage, read_write> instanceMatrices: array<f32>;
+@group(0) @binding(4) var<storage, read_write> alignedInstanceMatrices: array<f32>;
+@group(0) @binding(5) var<storage, read_write> instanceCounter: atomic<u32>;
+@group(0) @binding(6) var<uniform> params: Params;
 
-@group(0) @binding(0) var<storage, read> positions : FloatArray;
-@group(0) @binding(1) var<storage, read> normals : FloatArray;
-@group(0) @binding(2) var<storage, read_write> indices : UIntArray;
-@group(0) @binding(3) var<storage, read_write> instanceMatrices : FloatArray;
-@group(0) @binding(4) var<storage, read_write> alignedInstanceMatrices : FloatArray;
-@group(0) @binding(5) var<storage, read_write> instanceCounter : atomic<u32>;
-@group(0) @binding(6) var<uniform> params : Params;
-
-fn triangle_area(a : vec3<f32>, b : vec3<f32>, c : vec3<f32>) -> f32 {
-    let ab : vec3<f32> = b - a;
-    let ac : vec3<f32> = c - a;
-    let cross : vec3<f32> = cross(ab, ac);
+fn triangle_area(a: vec3<f32>, b: vec3<f32>, c: vec3<f32>) -> f32 {
+    let ab: vec3<f32> = b - a;
+    let ac: vec3<f32> = c - a;
+    let cross: vec3<f32> = cross(ab, ac);
     return length(cross) * 0.5;
 }
 
@@ -74,10 +67,10 @@ fn rotation_matrix_axis(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
 }
 
 @compute @workgroup_size(1,1,1)
-fn main(@builtin(global_invocation_id) id : vec3<u32>) {
-    let x : f32 = f32(id.x);
-    let y : f32 = f32(id.y);
-    let z : f32 = f32(id.z);
+fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+    let x: f32 = f32(id.x);
+    let y: f32 = f32(id.y);
+    let z: f32 = f32(id.z);
 
     let nbSubdivisions: u32 = params.nbVerticesPerRow - 1;
 
@@ -87,13 +80,13 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>) {
     // get first triangle index
     let index = quadIndex * 6 + triangleIndexInQuad * 3;
 
-    let index0: u32 = atomicLoad(&indices.elements[index + 0]);
-    let index1: u32 = atomicLoad(&indices.elements[index + 1]);
-    let index2: u32 = atomicLoad(&indices.elements[index + 2]);
+    let index0: u32 = indices[index + 0];
+    let index1: u32 = indices[index + 1];
+    let index2: u32 = indices[index + 2];
 
-    let position0: vec3<f32> = vec3<f32>(positions.elements[index0 * 3 + 0], positions.elements[index0 * 3 + 1], positions.elements[index0 * 3 + 2]);
-    let position1: vec3<f32> = vec3<f32>(positions.elements[index1 * 3 + 0], positions.elements[index1 * 3 + 1], positions.elements[index1 * 3 + 2]);
-    let position2: vec3<f32> = vec3<f32>(positions.elements[index2 * 3 + 0], positions.elements[index2 * 3 + 1], positions.elements[index2 * 3 + 2]);
+    let position0: vec3<f32> = vec3<f32>(positions[index0 * 3 + 0], positions[index0 * 3 + 1], positions[index0 * 3 + 2]);
+    let position1: vec3<f32> = vec3<f32>(positions[index1 * 3 + 0], positions[index1 * 3 + 1], positions[index1 * 3 + 2]);
+    let position2: vec3<f32> = vec3<f32>(positions[index2 * 3 + 0], positions[index2 * 3 + 1], positions[index2 * 3 + 2]);
 
     let triangle_center: vec3<f32> = (position0 + position1 + position2) / 3.0;
 
@@ -107,9 +100,9 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>) {
         nbInstances = nbInstances + 1;
     }
 
-    let normal0: vec3<f32> = vec3<f32>(normals.elements[index0 * 3 + 0], normals.elements[index0 * 3 + 1], normals.elements[index0 * 3 + 2]);
-    let normal1: vec3<f32> = vec3<f32>(normals.elements[index1 * 3 + 0], normals.elements[index1 * 3 + 1], normals.elements[index1 * 3 + 2]);
-    let normal2: vec3<f32> = vec3<f32>(normals.elements[index2 * 3 + 0], normals.elements[index2 * 3 + 1], normals.elements[index2 * 3 + 2]);
+    let normal0: vec3<f32> = vec3<f32>(normals[index0 * 3 + 0], normals[index0 * 3 + 1], normals[index0 * 3 + 2]);
+    let normal1: vec3<f32> = vec3<f32>(normals[index1 * 3 + 0], normals[index1 * 3 + 1], normals[index1 * 3 + 2]);
+    let normal2: vec3<f32> = vec3<f32>(normals[index2 * 3 + 0], normals[index2 * 3 + 1], normals[index2 * 3 + 2]);
 
     for (var i: u32 = 0; i < nbInstances; i = i + 1) {
         let in_triangle_coords: vec2<f32> = hash23(vec3<f32>(x, y, f32(i)) + triangle_center + params.position);
@@ -149,45 +142,45 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>) {
         let offset = atomicAdd(&instanceCounter, 1) * 16;
 
         // write instance matrix to buffer
-        instanceMatrices.elements[offset + 0] = instanceMatrix[0][0];
-        instanceMatrices.elements[offset + 1] = instanceMatrix[1][0];
-        instanceMatrices.elements[offset + 2] = instanceMatrix[2][0];
-        instanceMatrices.elements[offset + 3] = instanceMatrix[3][0];
+        instanceMatrices[offset + 0] = instanceMatrix[0][0];
+        instanceMatrices[offset + 1] = instanceMatrix[1][0];
+        instanceMatrices[offset + 2] = instanceMatrix[2][0];
+        instanceMatrices[offset + 3] = instanceMatrix[3][0];
 
-        instanceMatrices.elements[offset + 4] = instanceMatrix[0][1];
-        instanceMatrices.elements[offset + 5] = instanceMatrix[1][1];
-        instanceMatrices.elements[offset + 6] = instanceMatrix[2][1];
-        instanceMatrices.elements[offset + 7] = instanceMatrix[3][1];
+        instanceMatrices[offset + 4] = instanceMatrix[0][1];
+        instanceMatrices[offset + 5] = instanceMatrix[1][1];
+        instanceMatrices[offset + 6] = instanceMatrix[2][1];
+        instanceMatrices[offset + 7] = instanceMatrix[3][1];
 
-        instanceMatrices.elements[offset + 8] = instanceMatrix[0][2];
-        instanceMatrices.elements[offset + 9] = instanceMatrix[1][2];
-        instanceMatrices.elements[offset + 10] = instanceMatrix[2][2];
-        instanceMatrices.elements[offset + 11] = instanceMatrix[3][2];
+        instanceMatrices[offset + 8] = instanceMatrix[0][2];
+        instanceMatrices[offset + 9] = instanceMatrix[1][2];
+        instanceMatrices[offset + 10] = instanceMatrix[2][2];
+        instanceMatrices[offset + 11] = instanceMatrix[3][2];
 
-        instanceMatrices.elements[offset + 12] = instanceMatrix[0][3];
-        instanceMatrices.elements[offset + 13] = instanceMatrix[1][3];
-        instanceMatrices.elements[offset + 14] = instanceMatrix[2][3];
-        instanceMatrices.elements[offset + 15] = instanceMatrix[3][3];
+        instanceMatrices[offset + 12] = instanceMatrix[0][3];
+        instanceMatrices[offset + 13] = instanceMatrix[1][3];
+        instanceMatrices[offset + 14] = instanceMatrix[2][3];
+        instanceMatrices[offset + 15] = instanceMatrix[3][3];
 
         // write aligned instance matrix to buffer
-        alignedInstanceMatrices.elements[offset + 0] = alignedInstanceMatrix[0][0];
-        alignedInstanceMatrices.elements[offset + 1] = alignedInstanceMatrix[1][0];
-        alignedInstanceMatrices.elements[offset + 2] = alignedInstanceMatrix[2][0];
-        alignedInstanceMatrices.elements[offset + 3] = alignedInstanceMatrix[3][0];
+        alignedInstanceMatrices[offset + 0] = alignedInstanceMatrix[0][0];
+        alignedInstanceMatrices[offset + 1] = alignedInstanceMatrix[1][0];
+        alignedInstanceMatrices[offset + 2] = alignedInstanceMatrix[2][0];
+        alignedInstanceMatrices[offset + 3] = alignedInstanceMatrix[3][0];
 
-        alignedInstanceMatrices.elements[offset + 4] = alignedInstanceMatrix[0][1];
-        alignedInstanceMatrices.elements[offset + 5] = alignedInstanceMatrix[1][1];
-        alignedInstanceMatrices.elements[offset + 6] = alignedInstanceMatrix[2][1];
-        alignedInstanceMatrices.elements[offset + 7] = alignedInstanceMatrix[3][1];
+        alignedInstanceMatrices[offset + 4] = alignedInstanceMatrix[0][1];
+        alignedInstanceMatrices[offset + 5] = alignedInstanceMatrix[1][1];
+        alignedInstanceMatrices[offset + 6] = alignedInstanceMatrix[2][1];
+        alignedInstanceMatrices[offset + 7] = alignedInstanceMatrix[3][1];
 
-        alignedInstanceMatrices.elements[offset + 8] = alignedInstanceMatrix[0][2];
-        alignedInstanceMatrices.elements[offset + 9] = alignedInstanceMatrix[1][2];
-        alignedInstanceMatrices.elements[offset + 10] = alignedInstanceMatrix[2][2];
-        alignedInstanceMatrices.elements[offset + 11] = alignedInstanceMatrix[3][2];
+        alignedInstanceMatrices[offset + 8] = alignedInstanceMatrix[0][2];
+        alignedInstanceMatrices[offset + 9] = alignedInstanceMatrix[1][2];
+        alignedInstanceMatrices[offset + 10] = alignedInstanceMatrix[2][2];
+        alignedInstanceMatrices[offset + 11] = alignedInstanceMatrix[3][2];
 
-        alignedInstanceMatrices.elements[offset + 12] = alignedInstanceMatrix[0][3];
-        alignedInstanceMatrices.elements[offset + 13] = alignedInstanceMatrix[1][3];
-        alignedInstanceMatrices.elements[offset + 14] = alignedInstanceMatrix[2][3];
-        alignedInstanceMatrices.elements[offset + 15] = alignedInstanceMatrix[3][3];
+        alignedInstanceMatrices[offset + 12] = alignedInstanceMatrix[0][3];
+        alignedInstanceMatrices[offset + 13] = alignedInstanceMatrix[1][3];
+        alignedInstanceMatrices[offset + 14] = alignedInstanceMatrix[2][3];
+        alignedInstanceMatrices[offset + 15] = alignedInstanceMatrix[3][3];
     }
 }
