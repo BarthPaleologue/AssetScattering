@@ -159,7 +159,7 @@ export class CharacterController {
 
         const hero = result.meshes[0];
         if (planet) {
-            //FIXME when the position is 0 then character cannot be rotated (this makes no sense)
+            //FIXME when using WebGPU and the position is 0 then then character cannot be rotated (this makes no sense)
             hero.position = new Vector3(0, 0.000000001, 0);
             scene.onBeforeRenderObservable.add(() => {
                 setUpVector(hero, hero.position.normalizeToNew());
