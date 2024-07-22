@@ -1,11 +1,11 @@
 import scatterComputeSource from "./scatter.wgsl";
 import { ComputeShader } from "@babylonjs/core/Compute/computeShader";
-import { Engine } from "@babylonjs/core/Engines/engine";
 import { StorageBuffer } from "@babylonjs/core/Buffers/storageBuffer";
 import { UniformBuffer } from "@babylonjs/core/Materials/uniformBuffer";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { WebGPUEngine } from "@babylonjs/core/Engines";
 
-export async function computeSquareScatterPoints(position: Vector3, size: number, resolution: number, engine: Engine): Promise<Float32Array> {
+export async function computeSquareScatterPoints(position: Vector3, size: number, resolution: number, engine: WebGPUEngine): Promise<Float32Array> {
     const computeShader = new ComputeShader(
         "scatter",
         engine,

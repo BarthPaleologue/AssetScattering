@@ -15,6 +15,7 @@ import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugi
 import { InstancePatch } from "../instancing/instancePatch";
 import { computeVertexData } from "../compute/Terrain3dVertexData/computeVertexData";
 import { computeScatterPoints } from "../compute/scatterTerrain/computeScatterPoints";
+import { WebGPUEngine } from "@babylonjs/core/Engines";
 
 export enum Direction {
     FRONT,
@@ -62,7 +63,7 @@ export class PlanetChunk {
 
     async init(scene: Scene) {
         if (scene.getEngine().getCaps().supportComputeShaders) {
-            const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, rotationFromDirection(this.direction), this.size, scene.getEngine());
+            const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, rotationFromDirection(this.direction), this.size, scene.getEngine() as WebGPUEngine);
             vertexData.applyToMesh(this.mesh);
             this.vertexData = vertexData;
         } else {
@@ -196,7 +197,7 @@ export class PlanetChunk {
                 2 * flatArea,
                 this.nbVerticesPerRow,
                 this.scatterPerSquareMeter,
-                scene.getEngine()
+                scene.getEngine() as WebGPUEngine
             );
         }
 

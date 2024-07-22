@@ -1,7 +1,7 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
-import { WebGPUEngine } from "@babylonjs/core/Engines";
+import { AbstractEngine, WebGPUEngine } from "@babylonjs/core/Engines";
 
-export async function createEngine(canvas: HTMLCanvasElement): Promise<Engine> {
+export async function createEngine(canvas: HTMLCanvasElement): Promise<AbstractEngine> {
     if (window.location.href.includes("?webgpu")) {
         if (!WebGPUEngine.IsSupportedAsync) {
             throw new Error("WebGPU is not supported on this device");

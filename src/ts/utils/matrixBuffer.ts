@@ -1,6 +1,6 @@
 import { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Engine } from "@babylonjs/core/Engines/engine";
 import { computeSquareScatterPoints } from "../compute/scatterSquare/computeSquareScatterPoints";
+import { AbstractEngine, WebGPUEngine } from "@babylonjs/core/Engines";
 
 export function downSample(matrixBuffer: Float32Array, stride: number): Float32Array {
     const nbMatrices = Math.floor(matrixBuffer.length / 16);
@@ -24,9 +24,9 @@ export function randomDownSample(matrixBuffer: Float32Array, stride: number): Fl
     return downSampledBuffer;
 }
 
-export async function createSquareMatrixBuffer(position: Vector3, size: number, resolution: number, engine: Engine) {
+export async function createSquareMatrixBuffer(position: Vector3, size: number, resolution: number, engine: AbstractEngine) {
     if (engine.getCaps().supportComputeShaders) {
-        return computeSquareScatterPoints(position, size, resolution, engine);
+        return computeSquareScatterPoints(position, size, resolution, engine as WebGPUEngine);
     }
 
     const matrixBuffer = new Float32Array(resolution * resolution * 16);

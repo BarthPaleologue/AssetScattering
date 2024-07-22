@@ -4,7 +4,7 @@ import { ThinInstancePatch } from "./thinInstancePatch";
 import { createSquareMatrixBuffer } from "../utils/matrixBuffer";
 import { IPatch } from "./iPatch";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Engine } from "@babylonjs/core/Engines/engine";
+import { AbstractEngine } from "@babylonjs/core/Engines";
 
 export class PatchManager {
     private readonly meshesFromLod: TransformNode[];
@@ -53,7 +53,7 @@ export class PatchManager {
         this.queue.splice(queueIndex, 1);
     }
 
-    public static async circleInit(radius: number, patchSize: number, patchResolution: number, engine: Engine): Promise<ThinInstancePatch[]> {
+    public static async circleInit(radius: number, patchSize: number, patchResolution: number, engine: AbstractEngine): Promise<ThinInstancePatch[]> {
         const promises: Promise<ThinInstancePatch>[] = [];
         for (let x = -radius; x <= radius; x++) {
             for (let z = -radius; z <= radius; z++) {

@@ -1,10 +1,10 @@
 import scatterComputeSource from "./scatter.wgsl";
 import { VertexData } from "@babylonjs/core/Meshes/mesh.vertexData";
 import { ComputeShader } from "@babylonjs/core/Compute/computeShader";
-import { Engine } from "@babylonjs/core/Engines/engine";
 import { StorageBuffer } from "@babylonjs/core/Buffers/storageBuffer";
 import { UniformBuffer } from "@babylonjs/core/Materials/uniformBuffer";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { WebGPUEngine } from "@babylonjs/core/Engines";
 
 export async function computeScatterPoints(
     vertexData: VertexData,
@@ -12,7 +12,7 @@ export async function computeScatterPoints(
     area: number,
     nbVerticesPerRow: number,
     scatterPerSquareMeter: number,
-    engine: Engine
+    engine: WebGPUEngine
 ): Promise<[Float32Array, Float32Array]> {
     const heightMapComputeShader = new ComputeShader(
         "scatter",

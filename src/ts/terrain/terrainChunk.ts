@@ -10,6 +10,7 @@ import { randomPointInTriangleFromBuffer, triangleAreaFromBuffer } from "../util
 import { getTransformationQuaternion } from "../utils/algebra";
 import { computeVertexData } from "../compute/Terrain2dVertexData/computeVertexData";
 import { computeScatterPoints } from "../compute/scatterTerrain/computeScatterPoints";
+import { WebGPUEngine } from "@babylonjs/core/Engines";
 
 function scatterInTriangle(
     chunkPosition: Vector3,
@@ -88,7 +89,7 @@ export class TerrainChunk {
         const flatArea = this.size * this.size;
 
         if (scene.getEngine().getCaps().supportComputeShaders) {
-            const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, this.size, scene.getEngine());
+            const vertexData = await computeVertexData(this.nbVerticesPerRow, this.mesh.position, this.size, scene.getEngine() as WebGPUEngine);
             vertexData.applyToMesh(this.mesh);
             this.aggregate = new PhysicsAggregate(this.mesh, PhysicsShapeType.MESH, { mass: 0 }, scene);
 
@@ -98,7 +99,7 @@ export class TerrainChunk {
                 flatArea,
                 this.nbVerticesPerRow,
                 this.scatterPerSquareMeter,
-                scene.getEngine()
+                scene.getEngine() as WebGPUEngine
             );
         } else {
             const positions = new Float32Array(this.nbVerticesPerRow * this.nbVerticesPerRow * 3);
