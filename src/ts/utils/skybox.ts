@@ -2,6 +2,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { SkyMaterial } from "@babylonjs/materials";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { ReflectionProbe } from "@babylonjs/core/Probes/reflectionProbe";
 
 export function createSkybox(scene: Scene, sunPosition: Vector3) {
     const skyMaterial = new SkyMaterial("skyMaterial", scene);
@@ -12,4 +13,15 @@ export function createSkybox(scene: Scene, sunPosition: Vector3) {
     const skybox = MeshBuilder.CreateBox("skyBox", { size: 1000 }, scene);
     skybox.material = skyMaterial;
     skybox.infiniteDistance = true;
+
+    const rp = new ReflectionProbe("ref", 512, scene);
+    rp.renderList?.push(skybox);
+
+    scene.environmentTexture = rp.cubeTexture;
+    scene.customRenderTargets.push(rp.cubeTexture);
+
+    scene.onAfterRenderObservable.addOnce(() => {
+        const index = scene.customRenderTargets.indexOf(rp.cubeTexture);
+        scene.customRenderTargets.splice(index, 1);
+    });
 }
