@@ -3,17 +3,23 @@ precision highp float;
 uniform float time;
 
 uniform vec3 lightDirection;
+uniform vec3 cameraPosition;
 
 varying vec3 vPosition;
 
 varying mat4 normalMatrix;
 varying vec3 vNormal;
 
+varying float colorBlending;
+
 void main() {
     vec3 baseColor = vec3(0.05, 0.2, 0.01);
     vec3 tipColor = vec3(0.5, 0.5, 0.1);
 
-    vec3 finalColor = mix(baseColor, tipColor, pow(vPosition.y, 4.0));
+    vec3 color1 = mix(baseColor, tipColor, pow(vPosition.y, 4.0));
+    vec3 color2 = color1 * vec3(1.2, 0.8, 0.8);
+
+    vec3 finalColor = mix(color1, color2, colorBlending);
 
     vec3 normalW = normalize((normalMatrix * vec4(vNormal, 0.0)).xyz);
 

@@ -17,6 +17,7 @@ varying vec3 vPosition;
 
 varying mat4 normalMatrix;
 varying vec3 vNormal;
+varying float colorBlending;
 
 // rotation using https://www.wikiwand.com/en/Rodrigues%27_rotation_formula
 vec3 rotateAround(vec3 vector, vec3 axis, float theta) {
@@ -46,6 +47,8 @@ void main() {
 
     float windLeanAngle = remap(windStrength, 0.0, 1.0, 0.25, 1.0);
     windLeanAngle = easeIn(windLeanAngle, 2.0) * 0.75;
+
+    colorBlending = smoothstep(0.4, 0.6, texture2D(perlinNoise, objectWorld.xz * 0.02).r);
 
     // curved grass blade
     float leanAmount = 0.3;
