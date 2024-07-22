@@ -56,7 +56,7 @@ ambient.intensity = 0.2;
 
 createSkybox(scene, light.direction.scale(-1));
 
-await CharacterController.createAsync(scene, camera, true);
+await CharacterController.CreateAsync(scene);
 
 // Interesting part starts here
 new Planet(planetRadius, scene);

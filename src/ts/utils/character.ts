@@ -3,7 +3,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 
 import character from "../../assets/character.glb";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 import "@babylonjs/core/Animations/animatable";
 import "@babylonjs/core/Culling/ray";
@@ -11,171 +11,192 @@ import "@babylonjs/core/Culling/ray";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { PhysicsRaycastResult } from "@babylonjs/core/Physics/physicsRaycastResult";
-import { PhysicsEngineV2 } from "@babylonjs/core/Physics/v2";
 import { ActionManager, ExecuteCodeAction } from "@babylonjs/core/Actions";
-import { setUpVector } from "./algebra";
-import { AnimationGroup } from "@babylonjs/core";
-
-class AnimationGroupWrapper {
-    name: string;
-    group: AnimationGroup;
-    weight: number;
-
-    constructor(name: string, group: AnimationGroup, startingWeight: number) {
-        this.name = name;
-        this.weight = startingWeight;
-
-        this.group = group;
-        this.group.play(true);
-        this.group.setWeightForAllAnimatables(startingWeight);
-    }
-
-    moveTowardsWeight(targetWeight: number, deltaTime: number) {
-        this.weight = Math.min(Math.max(this.weight + deltaTime * Math.sign(targetWeight - this.weight), 0), 1);
-        this.group.setWeightForAllAnimatables(this.weight);
-    }
-}
+import { moveTowards } from "./moveTowards";
+import { AnimationGroup } from "@babylonjs/core/Animations/animationGroup";
+import { PhysicsShapeType } from "@babylonjs/core/Physics/v2/IPhysicsEnginePlugin";
+import { PhysicsAggregate } from "@babylonjs/core/Physics/v2/physicsAggregate";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 
 export class CharacterController {
-    readonly mesh: AbstractMesh;
+    readonly model: AbstractMesh;
 
-    readonly heroSpeed = 1.8;
-    readonly heroSpeedBackwards = 1.2;
-    readonly heroRotationSpeed = 6;
+    private readonly impostorMesh: AbstractMesh;
 
-    readonly idleAnim: AnimationGroupWrapper;
-    readonly nonIdleAnimations: AnimationGroupWrapper[];
+    readonly physicsAggregate: PhysicsAggregate;
 
-    private constructor(characterMesh: AbstractMesh, scene: Scene) {
-        this.mesh = characterMesh;
+    readonly moveSpeed = 1.8;
+    readonly rotationSpeed = 6;
+    readonly animationBlendSpeed = 4.0;
+
+    readonly walkAnim: AnimationGroup;
+    readonly sambaAnim: AnimationGroup;
+    readonly idleAnim: AnimationGroup;
+
+    private targetAnim: AnimationGroup;
+    readonly nonIdleAnimations: AnimationGroup[];
+
+    readonly inputMap: Map<string, boolean>;
+
+    readonly thirdPersonCamera: ArcRotateCamera;
+
+    keyForward = "w";
+    keyBackward = "s";
+    keyLeft = "a";
+    keyRight = "d";
+
+    static async CreateAsync(scene: Scene): Promise<CharacterController> {
+        const camera = new ArcRotateCamera("thirdPersonCamera", -1.5, 1.2, 5, Vector3.Zero(), scene);
+        camera.attachControl(true);
+
+        const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
+
+        const model = result.meshes[0];
+
+        const cameraAttachPoint = new TransformNode("cameraAttachPoint", scene);
+        cameraAttachPoint.parent = model;
+        cameraAttachPoint.position = new Vector3(0, 1.5, 0);
+
+        camera.setTarget(cameraAttachPoint);
+        camera.wheelPrecision = 200;
+        camera.lowerRadiusLimit = 3;
+        camera.upperBetaLimit = 3.14 / 2 + 0.2;
+
+        return new CharacterController(model, camera, scene);
+    }
+
+    private constructor(characterMesh: AbstractMesh, thirdPersonCamera: ArcRotateCamera, scene: Scene) {
+        this.impostorMesh = MeshBuilder.CreateCapsule("CharacterTransform", {height: 2, radius: 0.5}, scene);
+        this.impostorMesh.visibility = 0.1;
+        this.impostorMesh.rotationQuaternion = Quaternion.Identity();
+
+        this.model = characterMesh;
+        this.model.parent = this.impostorMesh;
+        this.model.rotate(Vector3.Up(), Math.PI)
+        this.model.position.y = -1
+
+        this.thirdPersonCamera = thirdPersonCamera;
 
         const walkAnimGroup = scene.getAnimationGroupByName("Walking");
         if (walkAnimGroup === null) throw new Error("'Walking' animation not found");
-        const walkAnim = new AnimationGroupWrapper("Walking", walkAnimGroup, 0);
-
-        const walkBackAnimGroup = scene.getAnimationGroupByName("WalkingBackwards");
-        if (walkBackAnimGroup === null) throw new Error("'WalkingBackwards' animation not found");
-        const walkBackAnim = new AnimationGroupWrapper("WalkingBackwards", walkBackAnimGroup, 0);
+        this.walkAnim = walkAnimGroup;
+        this.walkAnim.weight = 0;
 
         const idleAnimGroup = scene.getAnimationGroupByName("Idle");
         if (idleAnimGroup === null) throw new Error("'Idle' animation not found");
-        this.idleAnim = new AnimationGroupWrapper("Idle", idleAnimGroup, 1);
+        this.idleAnim = idleAnimGroup;
+        this.idleAnim.weight = 1;
 
         const sambaAnimGroup = scene.getAnimationGroupByName("SambaDancing");
         if (sambaAnimGroup === null) throw new Error("'Samba' animation not found");
-        const sambaAnim = new AnimationGroupWrapper("SambaDancing", sambaAnimGroup, 0);
+        this.sambaAnim = sambaAnimGroup;
+        this.sambaAnim.weight = 0;
 
-        let targetAnim = this.idleAnim;
-        this.nonIdleAnimations = [walkAnim, walkBackAnim, sambaAnim];
+        this.targetAnim = this.idleAnim;
+        this.nonIdleAnimations = [this.walkAnim, this.sambaAnim];
 
-
-        function setTargetAnimation(animation: AnimationGroupWrapper) {
-            targetAnim = animation;
-        }
-
-        const inputMap: Map<string, boolean> = new Map<string, boolean>();
+        this.inputMap = new Map();
         scene.actionManager = new ActionManager(scene);
         scene.actionManager.registerAction(
             new ExecuteCodeAction(ActionManager.OnKeyDownTrigger, (e) => {
-                inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+                this.inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
             })
         );
         scene.actionManager.registerAction(
             new ExecuteCodeAction(ActionManager.OnKeyUpTrigger, (e) => {
-                inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
+                this.inputMap.set(e.sourceEvent.key, e.sourceEvent.type == "keydown");
             })
         );
 
-        const raycastResult = new PhysicsRaycastResult();
+        this.physicsAggregate = new PhysicsAggregate(this.getTransform(), PhysicsShapeType.CAPSULE, {mass: 1, friction: 0.5});
 
-        //Rendering loop (executed for everyframe)
-        scene.onBeforePhysicsObservable.add(() => {
-            const deltaTime = scene.getEngine().getDeltaTime() / 1000;
-            let keydown = false;
-
-            if (walkAnim.weight > 0.0) {
-                characterMesh.moveWithCollisions(characterMesh.forward.scaleInPlace(this.heroSpeed * deltaTime * walkAnim.weight));
-            }
-
-            if (walkBackAnim.weight > 0.0) {
-                characterMesh.moveWithCollisions(characterMesh.forward.scaleInPlace(-this.heroSpeedBackwards * deltaTime * walkBackAnim.weight));
-            }
-
-            const isWalking = walkAnim.weight > 0.0 || walkBackAnim.weight > 0.0;
-
-            // Translation
-            if (inputMap.get("z") || inputMap.get("w")) {
-                setTargetAnimation(walkAnim);
-                keydown = true;
-            } else if (inputMap.get("s")) {
-                setTargetAnimation(walkBackAnim);
-                keydown = true;
-            }
-
-            // Rotation
-            if ((inputMap.get("q") || inputMap.get("a")) && isWalking) {
-                characterMesh.rotate(Vector3.Up(), -this.heroRotationSpeed * deltaTime);
-                keydown = true;
-            } else if (inputMap.get("d") && isWalking) {
-                characterMesh.rotate(Vector3.Up(), this.heroRotationSpeed * deltaTime);
-                keydown = true;
-            }
-
-            // Samba!
-            if (inputMap.get("b")) {
-                setTargetAnimation(sambaAnim);
-                keydown = true;
-            }
-
-            if (!keydown) {
-                setTargetAnimation(this.idleAnim);
-            }
-
-            let weightSum = 0;
-            for (const animation of this.nonIdleAnimations) {
-                if (animation === targetAnim) {
-                    animation.moveTowardsWeight(1, deltaTime);
-                } else {
-                    animation.moveTowardsWeight(0, deltaTime);
-                }
-                weightSum += animation.weight;
-            }
-
-            this.idleAnim.moveTowardsWeight(Math.min(Math.max(1 - weightSum, 0.0), 1.0), deltaTime);
-
-            // downward raycast
-            const start = characterMesh.position.add(characterMesh.up.scale(50));
-            const end = characterMesh.position.add(characterMesh.up.scale(-50));
-            (scene.getPhysicsEngine() as PhysicsEngineV2).raycastToRef(start, end, raycastResult);
-            if (raycastResult.hasHit) {
-                characterMesh.position = raycastResult.hitPointWorld.add(characterMesh.up.scale(0.01));
-            }
-        });
+        this.physicsAggregate.body.setMassProperties({ inertia: Vector3.ZeroReadOnly });
+        this.physicsAggregate.body.setAngularDamping(100);
+        this.physicsAggregate.body.setLinearDamping(10);
     }
 
-    static async createAsync(scene: Scene, camera: ArcRotateCamera, planet = false): Promise<CharacterController> {
-        const result = await SceneLoader.ImportMeshAsync("", "", character, scene);
+    public getTransform() {
+        return this.impostorMesh;
+    }
 
-        const hero = result.meshes[0];
-        if (planet) {
-            //FIXME when using WebGPU and the position is 0 then then character cannot be rotated (this makes no sense)
-            hero.position = new Vector3(0, 0.000000001, 0);
-            scene.onBeforeRenderObservable.add(() => {
-                setUpVector(hero, hero.position.normalizeToNew());
-                camera.upVector = hero.up;
-            });
+    public update(deltaSeconds: number) {
+        this.targetAnim = this.idleAnim;
+
+        const angle180 = Math.PI;
+        const angle45 = angle180 / 4;
+        const angle90 = angle180 / 2;
+        const angle135 = angle45 + angle90;
+        const direction = this.thirdPersonCamera.getForwardRay().direction;
+        const forward = new Vector3(direction.x, 0, direction.z).normalize();
+        const rot = Quaternion.FromLookDirectionLH(forward, Vector3.Up());
+
+        let rotation = 0;
+        if (this.inputMap.get(this.keyBackward) && !this.inputMap.get(this.keyRight) && !this.inputMap.get(this.keyLeft)) {
+            rotation = angle180
+        }
+        if (this.inputMap.get(this.keyLeft) && !this.inputMap.get(this.keyForward) && !this.inputMap.get(this.keyBackward)) {
+            rotation = -angle90
+        }
+        if (this.inputMap.get(this.keyRight) && !this.inputMap.get(this.keyForward) && !this.inputMap.get(this.keyBackward)) {
+            rotation = angle90
+        }
+        if (this.inputMap.get(this.keyForward) && this.inputMap.get(this.keyRight)) {
+            rotation = angle45
+        }
+        if (this.inputMap.get(this.keyForward) && this.inputMap.get(this.keyLeft)) {
+            rotation = -angle45
+        }
+        if (this.inputMap.get(this.keyBackward) && this.inputMap.get(this.keyRight)) {
+            rotation = angle135
+        }
+        if (this.inputMap.get(this.keyBackward) && this.inputMap.get(this.keyLeft)) {
+            rotation = -angle135
         }
 
-        const cameraAttachPoint = new TransformNode("cameraAttachPoint", scene);
-        cameraAttachPoint.parent = hero;
-        cameraAttachPoint.position = new Vector3(0, 1.5, 0);
+        rot.multiplyInPlace(Quaternion.RotationAxis(Vector3.Up(), rotation));
 
-        camera.lockedTarget = cameraAttachPoint;
-        camera.wheelPrecision = 200;
-        camera.lowerRadiusLimit = 3;
-        camera.upperBetaLimit = 3.14 / 2;
+        if (this.inputMap.get(this.keyForward) || this.inputMap.get(this.keyBackward) || this.inputMap.get(this.keyLeft) || this.inputMap.get(this.keyRight)) {
+            this.targetAnim = this.walkAnim;
 
-        return new CharacterController(hero, scene);
+            const quaternion = rot; //euler.toQuaternion();
+            const impostorQuaternion = this.impostorMesh.rotationQuaternion;
+            if (impostorQuaternion === null) {
+                throw new Error("Impostor quaternion is null");
+            }
+            Quaternion.SlerpToRef(
+                impostorQuaternion,
+                quaternion,
+                this.rotationSpeed * deltaSeconds,
+                impostorQuaternion
+            )
+            this.impostorMesh.translate(new Vector3(0, 0, -1), this.moveSpeed * deltaSeconds);
+            this.physicsAggregate.body.setTargetTransform(this.impostorMesh.absolutePosition, impostorQuaternion);
+        }
+
+        if (this.inputMap.get("b")) {
+            this.targetAnim = this.sambaAnim;
+        }
+
+
+        let weightSum = 0;
+        for (const animation of this.nonIdleAnimations) {
+            if (animation === this.targetAnim) {
+                animation.weight = moveTowards(animation.weight, 1, this.animationBlendSpeed * deltaSeconds);
+            } else {
+                animation.weight = moveTowards(animation.weight, 0, this.animationBlendSpeed * deltaSeconds);
+            }
+            if(animation.weight > 0 && !animation.isPlaying) animation.play(true);
+            if(animation.weight === 0 && animation.isPlaying) animation.pause();
+
+            weightSum += animation.weight;
+        }
+
+        this.idleAnim.weight = moveTowards(this.idleAnim.weight, Math.min(Math.max(1 - weightSum, 0.0), 1.0), this.animationBlendSpeed * deltaSeconds);
+    }
+
+    public dispose() {
+        this.impostorMesh.dispose();
+        this.model.dispose();
+        this.physicsAggregate.dispose();
     }
 }

@@ -74,11 +74,15 @@ new Sound("wind", windSound, scene, null, {
     autoplay: true
 });
 
-const camera = new ArcRotateCamera("camera", -3.14 / 3, 1.4, 6, Vector3.Zero(), scene);
-camera.minZ = 0.1;
-camera.attachControl();
+const character = await CharacterController.CreateAsync(scene);
+character.physicsAggregate.body.disablePreStep = false;
+character.getTransform().position.y += 5;
+scene.onAfterPhysicsObservable.add(() => {
+    character.physicsAggregate.body.disablePreStep = true;
+});
 
-const character = await CharacterController.createAsync(scene, camera);
+const camera = character.thirdPersonCamera;
+camera.minZ = 0.1;
 
 const light = new DirectionalLight("light", new Vector3(-5, 10, 10).negateInPlace().normalize(), scene);
 new HemisphericLight("hemi", new Vector3(0, 1, 0), scene);
@@ -90,7 +94,7 @@ highQualityGrassBlade.isVisible = false;
 const lowQualityGrassBlade = createGrassBlade(scene, 1);
 lowQualityGrassBlade.isVisible = false;
 
-const grassMaterial = createGrassMaterial(light, scene, character.mesh);
+const grassMaterial = createGrassMaterial(light, scene, character.getTransform());
 highQualityGrassBlade.material = grassMaterial;
 lowQualityGrassBlade.material = grassMaterial;
 
@@ -105,7 +109,7 @@ const butterfly = createButterfly(scene);
 butterfly.position.y = 1;
 butterfly.isVisible = false;
 
-const butterflyMaterial = createButterflyMaterial(light, scene, character.mesh);
+const butterflyMaterial = createButterflyMaterial(light, scene, character.getTransform());
 butterfly.material = butterflyMaterial;
 
 const trees = await createTrees(scene);
@@ -188,7 +192,7 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
 });
 
 const renderDistance = 6;
-await terrain.init(character.mesh.position, renderDistance);
+await terrain.init(character.getTransform().position, renderDistance);
 
 grassManager.initInstances();
 cubeManager.initInstances();
@@ -217,9 +221,12 @@ scene.onBeforeRenderObservable.add(() => {
 
     // do not update terrain every frame to prevent lag spikes
     if (terrainUpdateCounter % 30 === 0) {
-        terrain.update(character.mesh.position, renderDistance, 1);
+        terrain.update(character.getTransform().position, renderDistance, 1);
         terrainUpdateCounter = 0;
     }
+
+    const deltaSeconds = engine.getDeltaTime() / 1000;
+    character.update(deltaSeconds);
 });
 
 scene.executeWhenReady(() => {
