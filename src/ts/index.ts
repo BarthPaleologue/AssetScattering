@@ -41,8 +41,10 @@ import { InstancePatch } from "./instancing/instancePatch";
 import { TerrainChunk } from "./terrain/terrainChunk";
 import { createButterfly } from "./butterfly/butterfly";
 import { createButterflyMaterial } from "./butterfly/butterflyMaterial";
-import { createTree } from "./utils/tree";
+import { createTrees } from "./utils/tree";
 import { createEngine } from "./utils/createEngine";
+import { HierarchyInstancePatch } from "./instancing/hierarchyInstancePatch";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 const canvas = document.getElementById("renderer") as HTMLCanvasElement;
 canvas.width = window.innerWidth;
@@ -106,14 +108,12 @@ butterfly.isVisible = false;
 const butterflyMaterial = createButterflyMaterial(light, scene, character.mesh);
 butterfly.material = butterflyMaterial;
 
-const tree = await createTree(scene);
-tree.scaling.scaleInPlace(3);
-tree.bakeCurrentTransformIntoVertices();
-tree.position.y = -1;
-tree.checkCollisions = true;
-tree.isVisible = false;
-//Mesh.INSTANCEDMESH_SORT_TRANSPARENT = true
-tree.setEnabled(false);
+const trees = await createTrees(scene);
+trees.forEach(tree => {
+    tree.getChildMeshes().forEach(mesh => {
+        mesh.isVisible = false;
+    });
+});
 
 const terrainChunkSize = 20;
 
@@ -123,7 +123,16 @@ const grassManager = new PatchManager([lowQualityGrassBlade, highQualityGrassBla
 });
 const cubeManager = new PatchManager([cube]);
 const butterflyManager = new PatchManager([butterfly]);
-const treeManager = new PatchManager([tree]);
+const treeManager = new PatchManager(trees as [Mesh, Mesh, Mesh], (patch: IPatch) => {
+    const distance = Vector3.Distance(patch.getPosition(), camera.position);
+    if(distance < terrainChunkSize * 2) {
+        return 2;
+    }
+    if(distance < terrainChunkSize * 4) {
+        return 1;
+    }
+    return 0;
+});
 
 const terrain = new Terrain(
     20,
@@ -162,7 +171,7 @@ terrain.onCreateChunkObservable.add((chunk: TerrainChunk) => {
 
     const stride3 = 20000;
     const treeMatrixBuffer = randomDownSample(chunk.instancesMatrixBuffer, stride3);
-    const treePatch = new InstancePatch(chunk.mesh.position, treeMatrixBuffer);
+    const treePatch = new HierarchyInstancePatch(chunk.mesh.position, treeMatrixBuffer);
     treeManager.addPatch(treePatch);
 
     chunk.onDisposeObservable.add(() => {
